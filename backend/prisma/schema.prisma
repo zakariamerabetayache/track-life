@@ -1,0 +1,94 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Category {
+  id         Int      @id @default(autoincrement())
+  name       String   @db.VarChar(100)
+  color      String   @default("#6366F1") @db.VarChar(7)
+  sort_order Int      @default(0)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  goals      Goal[]
+
+  @@map("categories")
+}
+
+model Goal {
+  id          Int       @id @default(autoincrement())
+  title       String    @db.VarChar(255)
+  category_id Int?
+  is_fixed    Boolean   @default(true)
+  times_a_day Int       @default(1)
+  is_active   Boolean   @default(true)
+  sort_order  Int       @default(0)
+  is_daily    Boolean   @default(true)
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+  day_goals   DayGoal[]
+  category    Category? @relation(fields: [category_id], references: [id])
+
+  @@map("goals")
+}
+
+model Week {
+  id          Int         @id @default(autoincrement())
+  year        Int
+  week_number Int
+  start_date  DateTime    @db.Date
+  end_date    DateTime    @db.Date
+  created_at  DateTime    @default(now())
+  updated_at  DateTime    @updatedAt
+  day_goals   DayGoal[]
+  week_goals  Week_Goal[]
+
+  @@unique([year, week_number])
+  @@map("weeks")
+}
+
+model DayGoal {
+  id          Int          @id @default(autoincrement())
+  week_id     Int
+  day_of_week Int
+  goal_id     Int
+  is_auto     Boolean      @default(false)
+  prayer_time String?      @db.VarChar(50)
+  time_from   String?      @db.VarChar(8)
+  time_to     String?      @db.VarChar(8)
+  created_at  DateTime     @default(now())
+  completions Completion[]
+  goal        Goal         @relation(fields: [goal_id], references: [id], onDelete: Cascade)
+  week        Week         @relation(fields: [week_id], references: [id], onDelete: Cascade)
+
+  @@unique([week_id, day_of_week, goal_id])
+  @@map("day_goals")
+}
+
+model Completion {
+  id               Int      @id @default(autoincrement())
+  day_goal_id      Int
+  occurrence_index Int
+  completed_at     DateTime @default(now())
+  created_at       DateTime @default(now())
+  day_goal         DayGoal  @relation(fields: [day_goal_id], references: [id], onDelete: Cascade)
+
+  @@unique([day_goal_id, occurrence_index])
+  @@map("completions")
+}
+
+model Week_Goal {
+  id          Int      @id @default(autoincrement())
+  week_id     Int
+  designation String   @db.VarChar(100)
+  is_checked  Boolean  @default(false)
+  order       Int
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  week        Week     @relation(fields: [week_id], references: [id], onDelete: Cascade)
+
+  @@map("week_goals")
+}
