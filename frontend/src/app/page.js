@@ -97,7 +97,7 @@ export default function Home() {
             <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
               <Target className="h-5 w-5 text-white" />
             </div>
-            <h1 className="text-xl font-bold tracking-tight">Truck Life</h1>
+            <h1 className="text-xl font-bold tracking-tight">Track Life</h1>
           </div>
           <nav className="flex items-center gap-2">
             <Link href="/dashboard">
@@ -170,7 +170,7 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="border-t border-border/40 py-4 text-center text-xs text-muted-foreground">
-        Truck Life — Stay Disciplined, Stay On Track
+        Track Life — Stay Disciplined, Stay On Track
       </footer>
     </div>
   );

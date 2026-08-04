@@ -12,7 +12,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Truck Life — Weekly Goals Tracker",
+  title: "Track Life — Weekly Goals Tracker",
   description: "Track your weekly goals with daily checkboxes. Stay disciplined, stay on track.",
 };
 
