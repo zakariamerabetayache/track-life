@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
 import Link from "next/link";
-import { ChevronLeft, Plus, Edit2, Trash2 } from "lucide-react";
+import { ChevronLeft, Plus, Edit2, Trash2, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,12 +19,15 @@ import {
 
 export default function GoalsPage() {
   const [goals, setGoals] = useState([]);
+  const [oldgoals, setOldGoals] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  console.log("goals", JSON.stringify(goals))
 
   // Dialog state
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState(null);
+  const [search, setSearch] = useState("");
 
   // Form state
   const [formData, setFormData] = useState({
@@ -38,15 +41,27 @@ export default function GoalsPage() {
   useEffect(() => {
     loadData();
   }, []);
+  useEffect(() => {
+    hundleSearch();
+  }, [search]);
+
+  function hundleSearch(){
+console.log("search",search)
+let filteredgoals=[...oldgoals]
+filteredgoals =filteredgoals.filter(item =>item.title.includes(search))
+   setGoals(filteredgoals)
+
+  }
 
   const loadData = async () => {
     try {
       setLoading(true);
       const [goalsRes, catsRes] = await Promise.all([
-        api.getGoals({ is_active: true, is_daily: true }),
+        api.getGoals({ is_active: true, is_daily: false }),
         api.getCategories()
       ]);
       setGoals(goalsRes.data);
+      setOldGoals(goalsRes.data)
       setCategories(catsRes.data);
     } catch (err) {
       console.error(err);
@@ -133,6 +148,12 @@ export default function GoalsPage() {
       </header>
 
       <main className="flex-1 max-w-4xl mx-auto w-full p-4 space-y-4">
+        <Input
+            placeholder="Search goals..."
+            className="mb-4"
+            onChange={(e)=>setSearch(e.target.value)}
+            value={search}
+          />
         {loading ? (
           <div className="text-center py-12 text-muted-foreground">Loading...</div>
         ) : goals.length === 0 ? (
@@ -140,7 +161,13 @@ export default function GoalsPage() {
             No goals found. Create your first one!
           </div>
         ) : (
+           <>
+             
+
           <div className="grid gap-3">
+           
+       
+           
             {goals.map(goal => (
               <div key={goal.id} className="flex items-center justify-between p-4 rounded-xl border bg-card">
                 <div>
@@ -168,7 +195,9 @@ export default function GoalsPage() {
                 </div>
               </div>
             ))}
+           
           </div>
+            </>
         )}
       </main>
 

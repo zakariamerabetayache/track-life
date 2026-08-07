@@ -39,7 +39,7 @@ export default function AddGoalDialog({ open, onOpenChange, weekId, dayOfWeek, e
   const loadData = async () => {
     try {
       const [goalsRes, catsRes] = await Promise.all([
-        api.getGoals({ is_active: true, is_daily: true }),
+        api.getGoals({ is_active: true, is_daily: false }),
         api.getCategories()
       ]);
       // Filter out fixed goals and goals already added to this day

@@ -1,18 +1,21 @@
-# Truck Life (Track Life)
+# Track Life
 
-**Truck Life** is a personal productivity web application that helps you track the parts of your life that matter most. Monitor daily tasks, weekly goals, work hours, sleep, habits, and personal productivity metrics — all in one place.
+**Track Life** is a personal productivity web application that helps you track the parts of your life that matter most. Monitor daily tasks, weekly goals, work hours, sleep, habits, and personal productivity metrics — all in one place.
 
 ## Why I Built It
 
-Everyone wants to be more productive but many of us struggle with procrastination and lack of clarity. If you can't measure something, it's hard to improve it.
+Everyone wants to be more productive and take control of their life, but many people struggle with procrastination. One reason is a lack of clarity. It's difficult to improve something you don't measure.
 
-I built Truck Life to answer simple but powerful questions about my daily routine:
+I realized I couldn't answer simple questions about my own life:
 
-- How many hours did I actually work today?
+How many hours do I actually work each day?
 - Am I sleeping enough?
 - Am I building good habits or repeating bad ones?
+- Where is my time really going?
 
-With accurate data about your days, decisions stop being guesses and become choices.
+So I built Truck Life—first and foremost for myself.
+
+The goal wasn't just to create another to-do list. I wanted a system that could give me real data about how I spend my time. Once you have accurate numbers, your decisions become based on facts instead of assumptions.
 
 ## Philosophy
 
@@ -31,7 +34,7 @@ This app doesn't promise to fix your life for you. It shows you the truth. When 
 
 ## Screenshots
 
-Main dashboard and weekly views — screenshots taken from the app (found in `frontend/public/img`):
+Main dashboard and weekly views — screenshots taken from the app 
 
 ![Weekly view](frontend/public/img/ShowCurrentWeekWithWeklyGoals04.PNG)
 ![Track overview 1](frontend/public/img/tarck1.PNG)
@@ -98,37 +101,7 @@ Frontend environment variables (optional):
 
 - `NEXT_PUBLIC_API_URL` — full URL to the backend API (e.g. `http://localhost:3001/api`)
 
-## API Overview
 
-The backend exposes a small REST API under `/api`:
 
-- `GET /api/health` — health check
-- `GET/POST/PUT/DELETE /api/goals`
-- `GET/POST/PUT/DELETE /api/weeks`
-- `GET/POST/PUT/DELETE /api/categories`
-- `GET/POST/PUT/DELETE /api/day-goals`
-- `GET/POST/PUT/DELETE /api/completions`
-- `GET/POST/PUT/DELETE /api/week-goals`
 
-See the route handlers in `backend/src/routes` for request/response shapes.
 
-## Development notes
-
-- The backend uses Prisma with a PostgreSQL datasource (see `backend/prisma/schema.prisma`).
-- Logging is minimal and prints incoming requests with timestamps.
-- Request body size is limited to 10kb in the backend to avoid oversized payloads.
-
-## Contributing
-
-- Fork the repo, create a feature branch, and open a PR.
-- Keep changes focused and update/add tests where appropriate.
-
-If you'd like, I can open a PR for formatting, add a license, or create a CI pipeline.
-
-## License
-
-This project does not include a license file. If you want an open license, I can add `MIT` or another license of your choice.
-
----
-
-If you'd like any revisions (tone, length, extra sections such as deployment, CI, or a getting-started video), tell me which sections to expand and I will update the README. I can also commit a `LICENSE` file and push the change if you want.
