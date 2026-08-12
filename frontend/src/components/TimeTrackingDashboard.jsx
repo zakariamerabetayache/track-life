@@ -331,8 +331,8 @@ function SleepScheduleChart({ dayGoals }) {
               tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
               axisLine={false}
               tickLine={false}
-              domain={[0, 24]}
-              ticks={ [0, 4, 7,8, 12, 16, 20, 24]}
+              domain={[0, 14]}
+              ticks={ [0, 4, 7,8, 12, 14]}
             />
             <Tooltip content={<ScheduleTooltip />} />
             <Legend

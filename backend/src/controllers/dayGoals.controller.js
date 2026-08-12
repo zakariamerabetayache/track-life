@@ -113,113 +113,122 @@ const update = async (req, res, next) => {
 
 const getBadHubbitsStatus = async (req, res, next) => {
   try {
-    // Fetch bad habits from the database
+    // 1. Fetch all active "Bad Habbits" goals, with every DayGoal they appear in,
+    //    the DayGoal's week (for start_date), and the DayGoal's completions.
     const badHabits = await prisma.goal.findMany({
       where: {
         category: { name: 'Bad Habbits' },
-       
+        is_active: true,
+      },
+      include: {
+        day_goals: {
+          include: {
+            completions: true, // tells us whether a day was actually "done"
+            week: true,        // gives us start_date to compute a real calendar date
+          },
         },
-   
+      },
     });
 
+    // 2. For each habit compute its streak history from real DB data
+    const badHabits_tusus = badHabits.map((habit) => {
+      // Keep only DayGoals that have at least one completion (= the habit was done that day)
+      const completedDayGoals = habit.day_goals.filter(
+        (dg) => dg.completions.length > 0
+      );
 
+      // Convert each completed DayGoal → a "YYYY-MM-DD" calendar date.
+      // week.start_date is always the Sunday of that ISO week (day_of_week = 0).
+      // day_of_week is 0-indexed: 0 = Sunday, 1 = Monday, …, 6 = Saturday.
+      // So:  real date = start_date + day_of_week days
+      const doneDates = completedDayGoals
+        .map((dg) => {
+          const d = new Date(dg.week.start_date);
+          d.setDate(d.getDate() + dg.day_of_week);
+          // Use UTC parts to avoid timezone shifts flipping the date
+          const yyyy = d.getUTCFullYear();
+          const mm   = String(d.getUTCMonth() + 1).padStart(2, '0');
+          const dd   = String(d.getUTCDate()).padStart(2, '0');
+          return `${yyyy}-${mm}-${dd}`;
+        })
+        .sort(); // sort ascending so the grouping algorithm can walk left → right
 
-    res.json({ success: true, data: {badHabits :badHabits ,badHabits_tusus: [
-  {
-    name: "Smoking",
-    count_list: [
-      { count: 43, date_from: "2026-06-21", date_to: "2026-08-02" },
-      { count: 18, date_from: "2026-05-28", date_to: "2026-06-14" },
-      { count: 9, date_from: "2026-05-12", date_to: "2026-05-20" },
-      { count: 5, date_from: "2026-04-30", date_to: "2026-05-04" },
-      { count: 3, date_from: "2026-04-18", date_to: "2026-04-20" },
-      { count: 14, date_from: "2026-03-15", date_to: "2026-03-28" },
-      { count: 0, date_from: "2026-02-22", date_to: "2026-02-27" },
-    ].reverse(), // Reverse to have the most recent first
-  },
+      const count_list = computeStreaks(doneDates);
 
-  {
-    name: "Wasting Time",
-    count_list: [
-      { count: 12, date_from: "2026-07-22", date_to: "2026-08-02" },
-      { count: 21, date_from: "2026-06-18", date_to: "2026-07-08" },
-      { count: 14, date_from: "2026-05-27", date_to: "2026-06-09" },
-      { count: 7, date_from: "2026-05-10", date_to: "2026-05-16" },
-      { count: 4, date_from: "2026-04-25", date_to: "2026-04-28" },
-      { count: 17, date_from: "2026-03-29", date_to: "2026-04-14" },
-      { count: 8, date_from: "2026-02-18", date_to: "2026-02-25" },
-    ].reverse(), // Reverse to have the most recent first
-  },
+      return {
+        name: habit.title,
+        count_list,
+      };
+    });
 
-  {
-    name: "Sleeping Late",
-    count_list: [
-      { count: 67, date_from: "2026-05-28", date_to: "2026-08-02" },
-      { count: 24, date_from: "2026-04-22", date_to: "2026-05-15" },
-      { count: 11, date_from: "2026-03-28", date_to: "2026-04-07" },
-      { count: 8, date_from: "2026-03-10", date_to: "2026-03-17" },
-      { count: 3, date_from: "2026-02-25", date_to: "2026-02-27" },
-      { count: 15, date_from: "2026-01-30", date_to: "2026-02-13" },
-      { count: 10, date_from: "2026-01-10", date_to: "2026-01-19" },
-    ].reverse(), // Reverse to have the most recent first
-  },
-
-  {
-    name: "Watching Porn",
-    count_list: [
-      { count: 31, date_from: "2026-07-03", date_to: "2026-08-02" },
-      { count: 19, date_from: "2026-06-05", date_to: "2026-06-23" },
-      { count: 12, date_from: "2026-05-11", date_to: "2026-05-22" },
-      { count: 6, date_from: "2026-04-18", date_to: "2026-04-23" },
-      { count: 2, date_from: "2026-04-01", date_to: "2026-04-02" },
-      { count: 16, date_from: "2026-03-05", date_to: "2026-03-20" },
-      { count: 9, date_from: "2026-02-12", date_to: "2026-02-20" },
-    ].reverse(),
-   },
-
-  {
-    name: "Skipping Workout",
-    count_list: [
-      { count: 9, date_from: "2026-07-25", date_to: "2026-08-02" },
-      { count: 16, date_from: "2026-06-29", date_to: "2026-07-14" },
-      { count: 10, date_from: "2026-05-30", date_to: "2026-06-08" },
-      { count: 5, date_from: "2026-05-12", date_to: "2026-05-16" },
-      { count: 3, date_from: "2026-04-20", date_to: "2026-04-22" },
-      { count: 18, date_from: "2026-03-18", date_to: "2026-04-04" },
-      { count: 7, date_from: "2026-02-08", date_to: "2026-02-14" },
-    ].reverse(), 
-  },
-
-  {
-    name: "Eating Junk Food",
-    count_list: [
-      { count: 25, date_from: "2026-07-09", date_to: "2026-08-02" },
-      { count: 14, date_from: "2026-06-10", date_to: "2026-06-23" },
-      { count: 8, date_from: "2026-05-14", date_to: "2026-05-21" },
-      { count: 6, date_from: "2026-04-30", date_to: "2026-05-05" },
-      { count: 2, date_from: "2026-04-08", date_to: "2026-04-09" },
-      { count: 13, date_from: "2026-03-12", date_to: "2026-03-24" },
-      { count: 5, date_from: "2026-02-15", date_to: "2026-02-19" },
-    ].reverse(), 
-  },
-
-  {
-    name: "Overthinking",
-    count_list: [
-      { count: 54, date_from: "2026-06-10", date_to: "2026-08-02" },
-      { count: 27, date_from: "2026-05-01", date_to: "2026-05-27" },
-      { count: 15, date_from: "2026-04-03", date_to: "2026-04-17" },
-      { count: 7, date_from: "2026-03-18", date_to: "2026-03-24" },
-      { count: 4, date_from: "2026-02-26", date_to: "2026-03-01" },
-      { count: 20, date_from: "2026-01-28", date_to: "2026-02-16" },
-      { count: 11, date_from: "2026-01-05", date_to: "2026-01-15" },
-    ].reverse(),
-  },
-]}});
+    res.json({ success: true, data: { badHabits, badHabits_tusus } });
   } catch (error) {
     next(error);
   }
 };
 
-module.exports = { create, remove, update, getBadHubbitsStatus }; 
+// ── Helper: group sorted date strings into streak objects ─────────────────────
+//
+// Input:  ["2026-07-01", "2026-07-02", "2026-07-04"]  (sorted, ascending)
+// Output (newest first):
+//   [
+//     { count: 1, date_from: "2026-07-04", date_to: "2026-07-04" },  ← current
+//     { count: 2, date_from: "2026-07-01", date_to: "2026-07-02" },  ← previous
+//   ]
+//
+// If the last done-date was 2+ days ago the streak is dead, so a
+// { count: 0 } stub is prepended as the "current" entry.
+// ─────────────────────────────────────────────────────────────────────────────
+function computeStreaks(doneDates) {
+  const todayStr = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+
+  // Habit has never been completed at all
+  if (doneDates.length === 0) {
+    return [{ count: 0, date_from: todayStr, date_to: todayStr }];
+  }
+
+  // ── Step 1: group consecutive dates ────────────────────────────────────────
+  // Walk the sorted list; start a new group every time the gap is > 1 day.
+  const groups = [];
+  let currentGroup = [doneDates[0]];
+
+  for (let i = 1; i < doneDates.length; i++) {
+    const prev = new Date(doneDates[i - 1]);
+    const curr = new Date(doneDates[i]);
+    const dayDiff = (curr - prev) / (1000 * 60 * 60 * 24);
+
+    if (dayDiff === 1) {
+      currentGroup.push(doneDates[i]); // same streak — extend it
+    } else {
+      groups.push(currentGroup);       // gap found — save & start fresh
+      currentGroup = [doneDates[i]];
+    }
+  }
+  groups.push(currentGroup); // save the final group
+
+  // ── Step 2: convert groups → streak objects, newest first ──────────────────
+  const streaks = groups
+    .map((group) => ({
+      count:     group.length,
+      date_from: group[0],
+      date_to:   group[group.length - 1],
+    }))
+    .reverse(); // newest → oldest
+
+  // ── Step 3: is the current streak still alive? ─────────────────────────────
+  // "Alive" = the last done-date was today OR yesterday.
+  // If the gap is 2+ days the streak is broken; prepend a count:0 stub so
+  // the frontend card still shows "0" as the current streak.
+  const lastDone  = new Date(doneDates[doneDates.length - 1]);
+  const today     = new Date(todayStr);
+  const daysSinceLast = (today - lastDone) / (1000 * 60 * 60 * 24);
+
+  if (daysSinceLast > 1) {
+    streaks.unshift({ count: 0, date_from: todayStr, date_to: todayStr });
+  }
+
+  return streaks;
+}
+
+module.exports = { create, remove, update, getBadHubbitsStatus };
 

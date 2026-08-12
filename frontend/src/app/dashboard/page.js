@@ -19,25 +19,28 @@ import {
 
 
 function daysBetween(startDate, endDate) {
+  if (!startDate || !endDate) return 0;
   const start = new Date(startDate);
   const end = new Date(endDate);
 
   const diff = end - start; // milliseconds
+  if (isNaN(diff)) return 0;
 
-  return Math.floor(diff / (1000 * 60 * 60 * 24));
+  return Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24))) + 1;
 }
 
 function StreakHoverCard({ streak, children }) {
+  if (!streak) return children;
   return (
     <HoverCard openDelay={150} closeDelay={100}>
-      <HoverCardTrigger >
+      <HoverCardTrigger>
         {children}
       </HoverCardTrigger>
 
       <HoverCardContent className="w-64 rounded-xl">
         <div className="space-y-2">
           <h4 className="font-semibold text-base">
-            🔥 {streak?.count} Day Streak
+            🔥 {streak?.count ?? 0} Day Streak
           </h4>
 
           <div className="space-y-1 text-sm text-muted-foreground">
@@ -45,14 +48,14 @@ function StreakHoverCard({ streak, children }) {
               <span className="font-medium text-foreground">
                 Started:
               </span>{" "}
-              {streak.date_from}
+              {streak?.date_from || "N/A"}
             </p>
 
             <p>
               <span className="font-medium text-foreground">
                 Ended:
               </span>{" "}
-              {streak.date_to}
+              {streak?.date_to || "N/A"}
             </p>
           </div>
         </div>
@@ -76,22 +79,16 @@ function DashboardHeader() {
 
 
 export default async function Dashboard() {
-  const habitsWithTotalDays = await dashboardService.getBadHubbitsStatus();
-  const { badHabits, badHabits_tusus } = habitsWithTotalDays;
-  console.log("badHabits", JSON.stringify(badHabits));
+  const badHabitsData = await dashboardService.getBadHubbitsStatus();
+  const badHabits_tusus = badHabitsData?.badHabits_tusus || [];
 
-
-const  habits  = badHabits_tusus?.map((habit) => ({
-  ...habit,
-  days_without_this_habit: habit.count_list.reduce(
-    (sum, streak) => sum + streak.count,
-    0
-  ),
-}));
-
-
-  
-    
+  const habits = badHabits_tusus.map((habit) => ({
+    ...habit,
+    days_without_this_habit: (habit.count_list || []).reduce(
+      (sum, streak) => sum + streak.count,
+      0
+    ),
+  }));
 
   return (
     <>
@@ -108,108 +105,116 @@ const  habits  = badHabits_tusus?.map((habit) => ({
           </p>
         </div>
 
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {habits?.map((habit) => {
-            const longest =
-              habit.count_list?.length > 0
-                ? Math.max(...habit.count_list.map((s) => s.count))
-                : 0;
+        {habits.length === 0 ? (
+          <div className="rounded-2xl border p-12 text-center text-muted-foreground">
+            No bad habits recorded yet. Add some goals in the &quot;Bad Habbits&quot; category to get started!
+          </div>
+        ) : (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {habits.map((habit) => {
+              const countList = habit.count_list || [];
+              const currentStreak = countList[0] || { count: 0, date_from: "", date_to: "" };
+              const oldestStreak = countList[countList.length - 1] || currentStreak;
 
-            return (
-             <Card
-  key={habit.name}
-  className="rounded-2xl border p-5 shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl"
->
-  <div className="flex items-start justify-between">
-    <div className="flex items-center gap-3">
-      <div
-        className={`rounded-xl p-3 ${
-          habit.count_list[0].count === 0
-            ? "bg-zinc-100"
-            : "bg-orange-100"
-        }`}
-      >
-        <Flame
-          className={`h-6 w-6 ${
-            habit.count_list[0].count === 0
-              ? "text-zinc-400"
-              : "text-orange-600"
-          }`}
-        />
-      </div>
+              const longest =
+                countList.length > 0
+                  ? Math.max(...countList.map((s) => s.count))
+                  : 0;
 
-      <div>
-        <h2 className="font-semibold text-lg">
-          {habit.name}
-        </h2>
+              const isZero = currentStreak.count === 0;
 
-        <p className="text-xs text-muted-foreground">
-          Current streak
-        </p>
-      </div>
-    </div>
+              return (
+                <Card
+                  key={habit.name}
+                  className="rounded-2xl border p-5 shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`rounded-xl p-3 ${
+                          isZero ? "bg-zinc-100" : "bg-orange-100"
+                        }`}
+                      >
+                        <Flame
+                          className={`h-6 w-6 ${
+                            isZero ? "text-zinc-400" : "text-orange-600"
+                          }`}
+                        />
+                      </div>
 
-    <CircleHelp className="h-5 w-5 cursor-pointer text-muted-foreground" />
-  </div>
+                      <div>
+                        <h2 className="font-semibold text-lg">
+                          {habit.name}
+                        </h2>
 
-  {/* Current streak */}
-  <div className="mt-5 text-center">
-    <StreakHoverCard streak={habit.count_list[0]}>
-      <button
-        className={`
-          rounded-2xl
-          px-8
-          py-3
-          text-5xl
-          font-bold
-          transition
-          ${
-            habit.count_list[0].count === 0
-              ? "bg-zinc-100 text-zinc-400"
-              : "bg-orange-500 text-white hover:bg-orange-600"
-          }
-        `}
-      >
-        {habit.count_list[0].count}
-      </button>
-    </StreakHoverCard>
-  </div>
+                        <p className="text-xs text-muted-foreground">
+                          Current streak
+                        </p>
+                      </div>
+                    </div>
 
-  {/* Compact stats */}
-  <div className="mt-5 grid grid-cols-2 gap-3">
-    <div className="rounded-xl bg-muted p-3 text-center">
-      <p className="text-[11px] uppercase text-muted-foreground">
-        Days Clean
-      </p>
+                    <CircleHelp className="h-5 w-5 cursor-pointer text-muted-foreground" />
+                  </div>
 
-      <p className="text-xl font-bold text-orange-500">
-        {habit.days_without_this_habit}
-        <span className="mx-1 text-muted-foreground">/</span>
-        {daysBetween(
-          habit.count_list[0].date_from,
-          habit.count_list[habit.count_list.length - 1].date_to
+                  {/* Current streak */}
+                  <div className="mt-5 text-center">
+                    <StreakHoverCard streak={currentStreak}>
+                      <button
+                        className={`
+                          rounded-2xl
+                          px-8
+                          py-3
+                          text-5xl
+                          font-bold
+                          transition
+                          ${
+                            isZero
+                              ? "bg-zinc-100 text-zinc-400"
+                              : "bg-orange-500 text-white hover:bg-orange-600"
+                          }
+                        `}
+                      >
+                        {currentStreak.count}
+                      </button>
+                    </StreakHoverCard>
+                  </div>
+
+                  {/* Compact stats */}
+                  <div className="mt-5 grid grid-cols-2 gap-3">
+                    <div className="rounded-xl bg-muted p-3 text-center">
+                      <p className="text-[11px] uppercase text-muted-foreground">
+                        Days Clean
+                      </p>
+
+                      <p className="text-xl font-bold text-orange-500">
+                        {habit.days_without_this_habit}
+                        <span className="mx-1 text-muted-foreground">/</span>
+                        {daysBetween(
+                          currentStreak.date_from,
+                          oldestStreak.date_to
+                        )}
+                      </p>
+                    </div>
+
+                    <div className="rounded-xl bg-muted p-3 text-center">
+                      <p className="text-[11px] uppercase text-muted-foreground">
+                        Best
+                      </p>
+
+                      <p className="text-xl font-bold text-orange-500">
+                        {longest}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Previous streaks */}
+                  <PreviousStreaks streaks={countList.slice(1)} />
+                </Card>
+              );
+            })}
+          </div>
         )}
-      </p>
-    </div>
-
-    <div className="rounded-xl bg-muted p-3 text-center">
-      <p className="text-[11px] uppercase text-muted-foreground">
-        Best
-      </p>
-
-      <p className="text-xl font-bold text-orange-500">
-        {longest}
-      </p>
-    </div>
-  </div>
-
-  {/* Previous streaks */}
-  <PreviousStreaks streaks={habit.count_list.slice(1)} />
-</Card>
-            );
-          })}
-        </div>
       </main>
     </>
   );
-}
+}
