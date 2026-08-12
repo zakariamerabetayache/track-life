@@ -93,8 +93,8 @@ const update = async (req, res, next) => {
       where: { id },
       data: {
         ...(prayer_time !== undefined && { prayer_time: prayer_time ?? null }),
-        ...(time_from !== undefined  && { time_from:   time_from  ?? null }),
-        ...(time_to   !== undefined  && { time_to:     time_to    ?? null }),
+        ...(time_from !== undefined && { time_from: time_from ?? null }),
+        ...(time_to !== undefined && { time_to: time_to ?? null }),
       },
       include: {
         goal: { include: { category: true } },
@@ -110,7 +110,7 @@ const update = async (req, res, next) => {
 
 
 // ── GET /api/day-goals/dashboard/bad-habits ───────────────────────────────────
-
+// the function behind the dashbord bage in the bad habbits suction 
 const getBadHubbitsStatus = async (req, res, next) => {
   try {
     // 1. Fetch all active "Bad Habbits" goals, with every DayGoal they appear in,
@@ -147,8 +147,8 @@ const getBadHubbitsStatus = async (req, res, next) => {
           d.setDate(d.getDate() + dg.day_of_week);
           // Use UTC parts to avoid timezone shifts flipping the date
           const yyyy = d.getUTCFullYear();
-          const mm   = String(d.getUTCMonth() + 1).padStart(2, '0');
-          const dd   = String(d.getUTCDate()).padStart(2, '0');
+          const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+          const dd = String(d.getUTCDate()).padStart(2, '0');
           return `${yyyy}-${mm}-${dd}`;
         })
         .sort(); // sort ascending so the grouping algorithm can walk left → right
@@ -209,9 +209,9 @@ function computeStreaks(doneDates) {
   // ── Step 2: convert groups → streak objects, newest first ──────────────────
   const streaks = groups
     .map((group) => ({
-      count:     group.length,
+      count: group.length,
       date_from: group[0],
-      date_to:   group[group.length - 1],
+      date_to: group[group.length - 1],
     }))
     .reverse(); // newest → oldest
 
@@ -219,8 +219,8 @@ function computeStreaks(doneDates) {
   // "Alive" = the last done-date was today OR yesterday.
   // If the gap is 2+ days the streak is broken; prepend a count:0 stub so
   // the frontend card still shows "0" as the current streak.
-  const lastDone  = new Date(doneDates[doneDates.length - 1]);
-  const today     = new Date(todayStr);
+  const lastDone = new Date(doneDates[doneDates.length - 1]);
+  const today = new Date(todayStr);
   const daysSinceLast = (today - lastDone) / (1000 * 60 * 60 * 24);
 
   if (daysSinceLast > 1) {
