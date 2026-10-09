@@ -2,7 +2,7 @@ const express = require('express');
 const router  = express.Router();
 
 const controller = require('../controllers/goals.controller');
-const validate   = require('../middleware/validate');
+const { validate } = require('../middleware/validate');
 const { createGoalSchema, updateGoalSchema } = require('../schemas/goals.schema');
 
 router.get   ('/',    controller.getAll);

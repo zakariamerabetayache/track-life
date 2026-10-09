@@ -23,6 +23,7 @@ app.use('/api/categories', require('./routes/categories'));
 app.use('/api/day-goals', require('./routes/dayGoals'));
 app.use('/api/completions', require('./routes/completions'));
 app.use('/api/week-goals', require('./routes/weekGoals'));
+app.use('/api/reminders', require('./routes/reminders'));
 
 // Health check
 app.get('/api/health', (_req, res) => {

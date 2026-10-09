@@ -2,7 +2,7 @@ const express = require('express');
 const router  = express.Router();
 
 const controller = require('../controllers/categories.controller');
-const validate   = require('../middleware/validate');
+const { validate } = require('../middleware/validate');
 const { createCategorySchema, updateCategorySchema } = require('../schemas/categories.schema');
 
 router.get   ('/',    controller.getAll);

@@ -1,7 +1,29 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
-async function fetchAPI(endpoint, options = {}) {
+/**
+ * Central API client — every request flows through here.
+ *
+ * Responsibilities:
+ *  1. Prepend the base URL
+ *  2. Set JSON headers
+ *  3. Parse the response
+ *  4. Throw a structured error on non-2xx responses
+ *
+ * The thrown error object carries `status`, `message`, and `errors` (field-level)
+ * so the UI can display server validation messages on the correct form fields.
+ */
+class ApiError extends Error {
+  constructor(status, message, errors = {}) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.errors = errors; // { field: ["error message"] } — from Zod on the server
+  }
+}
+
+export async function fetchAPI(endpoint, options = {}) {
   const url = `${API_BASE}${endpoint}`;
+
   const res = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
@@ -10,13 +32,25 @@ async function fetchAPI(endpoint, options = {}) {
     ...options,
   });
 
+  // Try to parse JSON regardless of status — the server always returns JSON
+  const json = await res.json().catch(() => ({
+    message: 'Network error — could not reach the server',
+  }));
+
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: 'Network error' }));
-    throw new Error(error.message || `API Error: ${res.status}`);
+    throw new ApiError(
+      res.status,
+      json.message || `Request failed (${res.status})`,
+      json.errors || {}
+    );
   }
 
-  return res.json();
+  return json;
 }
+
+// ── Convenience exports ────────────────────────────────────────────────────────
+// These keep API calls readable and consistent across the codebase.
+// Each resource module (reminders.api.js, etc.) imports fetchAPI directly.
 
 export const api = {
   // Weeks

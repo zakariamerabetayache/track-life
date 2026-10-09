@@ -118,6 +118,12 @@ export default function Home() {
                 <span className="hidden sm:inline">Categories</span>
               </Button>
             </Link>
+            <Link href="/reminders">
+              <Button variant="ghost" size="sm" className="gap-2">
+                <Settings className="h-4 w-4" />
+                <span className="hidden sm:inline">Reminders</span>
+              </Button>
+            </Link>
           </nav>
         </div>
       </header>

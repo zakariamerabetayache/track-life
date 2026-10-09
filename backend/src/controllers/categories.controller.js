@@ -37,7 +37,7 @@ const create = async (req, res, next) => {
       data: { name, color, sort_order },
     });
 
-    res.status(201).json({ success: true, data: { ...category, goals_count: 0 } });
+    res.status(201).json({ success: true, category: { ...category, goals_count: 0 } });
   } catch (error) {
     next(error);
   }

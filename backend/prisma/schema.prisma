@@ -92,3 +92,13 @@ model Week_Goal {
 
   @@map("week_goals")
 }
+
+model Reminders {
+  id         Int      @id @default(autoincrement())
+  title      String   @db.VarChar(255)
+  content    String   @db.Text
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  @@map("reminders")
+}
