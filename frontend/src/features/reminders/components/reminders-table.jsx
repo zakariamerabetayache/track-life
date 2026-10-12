@@ -32,6 +32,7 @@ import { Plus } from "lucide-react";
  * @param {Function} props.onCreateNew
  * @param {Function} props.onEdit
  * @param {Function} props.onDelete
+ * @param {Function} [props.onToggleStatus]
  */
 export function RemindersTable({
   data,
@@ -51,6 +52,7 @@ export function RemindersTable({
   onCreateNew,
   onEdit,
   onDelete,
+  onToggleStatus,
 }) {
   const columns = getReminderColumns({
     sortBy,
@@ -58,6 +60,7 @@ export function RemindersTable({
     onSort,
     onEdit,
     onDelete,
+    onToggleStatus,
   });
 
   return (

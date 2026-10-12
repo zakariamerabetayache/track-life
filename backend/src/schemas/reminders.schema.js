@@ -81,9 +81,16 @@ const updateReminderSchema = z
     { message: 'At least one field must be provided to update' }
   );
 
+// ── Toggle Status ────────────────────────────────────────────────────────────
+// is_active can be provided explicitly (true/false) or omitted to toggle current state
+const toggleReminderSchema = z.object({
+  is_active: z.boolean().optional(),
+});
+
 module.exports = {
   idParamSchema,
   listRemindersSchema,
   createReminderSchema,
   updateReminderSchema,
+  toggleReminderSchema,
 };

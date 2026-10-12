@@ -9,7 +9,7 @@ import WeekGoals from "@/components/WeekGoals";
 import TimeTrackingDashboard from "@/components/TimeTrackingDashboard";
 
 import Link from "next/link";
-import { Settings, Target, LayoutGrid } from "lucide-react";
+import { Settings, Target, LayoutGrid, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -120,7 +120,7 @@ export default function Home() {
             </Link>
             <Link href="/reminders">
               <Button variant="ghost" size="sm" className="gap-2">
-                <Settings className="h-4 w-4" />
+                <Bell className="h-4 w-4" />
                 <span className="hidden sm:inline">Reminders</span>
               </Button>
             </Link>

@@ -136,4 +136,36 @@ const remove = asyncHandler(async (req, res) => {
   });
 });
 
-module.exports = { getAll, getOne, create, update, remove };
+// ── PATCH /api/reminders/:id/toggle ────────────────────────────────────────────
+const toggleStatus = asyncHandler(async (req, res) => {
+  const params = req.validatedParams || req.params;
+  const id = Number(params.id);
+  const body = req.validatedBody || req.body || {};
+
+  const existing = await prisma.reminders.findUnique({
+    where: { id },
+  });
+
+  if (!existing) {
+    throw new NotFoundError(`Reminder with ID ${id} not found.`);
+  }
+
+  // If explicit is_active boolean is sent, use it; otherwise toggle
+  const nextStatus = typeof body.is_active === 'boolean'
+    ? body.is_active
+    : !existing.is_active;
+
+  const updatedReminder = await prisma.reminders.update({
+    where: { id },
+    data: { is_active: nextStatus },
+  });
+
+  res.status(200).json({
+    success: true,
+    data: updatedReminder,
+    message: `Reminder ${nextStatus ? 'activated' : 'deactivated'} successfully.`,
+  });
+});
+
+module.exports = { getAll, getOne, create, update, remove, toggleStatus };
+

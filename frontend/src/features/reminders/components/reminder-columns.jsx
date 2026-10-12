@@ -2,6 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,7 +17,7 @@ import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
  * getReminderColumns — returns column definitions for the reminders table.
  *
  * Receives the sort state and callbacks from the parent so columns
- * can trigger sorts and row actions (edit, delete) without owning that state.
+ * can trigger sorts and row actions (edit, delete, toggle) without owning that state.
  *
  * Separation rationale: column definitions describe WHAT to render,
  * not HOW the data is fetched. This keeps them pure and testable.
@@ -27,8 +28,9 @@ import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
  * @param {Function} params.onSort         - (sortBy, sortOrder) => void
  * @param {Function} params.onEdit         - (reminder) => void
  * @param {Function} params.onDelete       - (reminder) => void
+ * @param {Function} [params.onToggleStatus] - (reminder, checked) => void
  */
-export function getReminderColumns({ sortBy, sortOrder, onSort, onEdit, onDelete }) {
+export function getReminderColumns({ sortBy, sortOrder, onSort, onEdit, onDelete, onToggleStatus }) {
   return [
     // ── Title (sortable) ──────────────────────────────────────────────────────
     {
@@ -62,22 +64,29 @@ export function getReminderColumns({ sortBy, sortOrder, onSort, onEdit, onDelete
       ),
     },
 
-    // ── Status badge ──────────────────────────────────────────────────────────
+    // ── Status switch & badge ──────────────────────────────────────────────────
     {
       key: "status",
       header: "Status",
-      skeletonWidth: "w-16",
+      skeletonWidth: "w-28",
       render: (row) => (
-        <Badge
-          variant={row.is_active ? "default" : "secondary"}
-          className={
-            row.is_active
-              ? "bg-emerald-500/15 text-emerald-500 hover:bg-emerald-500/25 border-0"
-              : "bg-muted text-muted-foreground border-0"
-          }
-        >
-          {row.is_active ? "Active" : "Inactive"}
-        </Badge>
+        <div className="flex items-center gap-2.5">
+          <Switch
+            checked={row.is_active}
+            onCheckedChange={(checked) => onToggleStatus?.(row, checked)}
+            aria-label={`Toggle active status for ${row.title}`}
+          />
+          <Badge
+            variant={row.is_active ? "default" : "secondary"}
+            className={
+              row.is_active
+                ? "bg-emerald-500/15 text-emerald-500 hover:bg-emerald-500/25 border-0"
+                : "bg-muted text-muted-foreground border-0"
+            }
+          >
+            {row.is_active ? "Active" : "Inactive"}
+          </Badge>
+        </div>
       ),
     },
 
@@ -130,16 +139,18 @@ export function getReminderColumns({ sortBy, sortOrder, onSort, onEdit, onDelete
       skeletonWidth: "w-8",
       render: (row) => (
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-              aria-label={`Actions for ${row.title}`}
-            >
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                aria-label={`Actions for ${row.title}`}
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            }
+          />
           <DropdownMenuContent align="end" className="w-40">
             <DropdownMenuItem onClick={() => onEdit(row)}>
               <Pencil className="mr-2 h-4 w-4" />

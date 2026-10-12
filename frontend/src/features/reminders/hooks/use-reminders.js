@@ -106,3 +106,21 @@ export function useDeleteReminder({ onSuccess } = {}) {
     },
   });
 }
+
+// ── Toggle status mutation ───────────────────────────────────────────────────
+export function useToggleReminderStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, is_active }) => remindersApi.toggleStatus(id, is_active),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: reminderKeys.lists() });
+      const nextStatus = res?.data?.is_active;
+      toast.success(nextStatus ? "Reminder activated" : "Reminder deactivated");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to update reminder status");
+    },
+  });
+}
+

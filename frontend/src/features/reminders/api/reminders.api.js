@@ -48,4 +48,11 @@ export const remindersApi = {
     fetchAPI(`/reminders/${id}`, {
       method: "DELETE",
     }),
+
+  /** Toggle or set active status of a reminder */
+  toggleStatus: (id, isActive) =>
+    fetchAPI(`/reminders/${id}/toggle`, {
+      method: "PATCH",
+      body: JSON.stringify(isActive !== undefined ? { is_active: isActive } : {}),
+    }),
 };

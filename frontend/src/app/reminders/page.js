@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useDebounce } from "@/hooks/use-debounce";
-import { useReminders } from "@/features/reminders/hooks/use-reminders";
+import { useReminders, useToggleReminderStatus } from "@/features/reminders/hooks/use-reminders";
 import { RemindersTable } from "@/features/reminders/components/reminders-table";
 import { ReminderFormDialog } from "@/features/reminders/components/reminder-form-dialog";
 import { DeleteReminderDialog } from "@/features/reminders/components/delete-reminder-dialog";
@@ -99,6 +99,16 @@ export default function RemindersPage() {
     setIsDeleteOpen(true);
   }, []);
 
+  const toggleStatusMutation = useToggleReminderStatus();
+
+  const handleToggleStatus = useCallback((reminder, nextChecked) => {
+    if (!reminder?.id) return;
+    toggleStatusMutation.mutate({
+      id: reminder.id,
+      is_active: nextChecked,
+    });
+  }, [toggleStatusMutation]);
+
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -139,6 +149,7 @@ export default function RemindersPage() {
           onCreateNew={handleCreateNew}
           onEdit={handleEdit}
           onDelete={handleDelete}
+          onToggleStatus={handleToggleStatus}
         />
       </main>
 
