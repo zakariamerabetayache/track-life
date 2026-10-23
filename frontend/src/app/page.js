@@ -130,6 +130,12 @@ export default function Home() {
                 <span className="hidden sm:inline">Reminders Display</span>
               </Button>
             </Link>
+            <Link href="/one_day_dashboard">
+              <Button variant="ghost" size="sm" className="gap-2">
+                <Bell className="h-4 w-4" />
+                <span className="hidden sm:inline">One Day Dashboard</span>
+              </Button>
+            </Link>
           </nav>
         </div>
       </header>

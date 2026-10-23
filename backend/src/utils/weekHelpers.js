@@ -11,7 +11,7 @@ const WEEK_WITH_GOALS = {
       { goal: { sort_order: 'asc' } },
     ],
     include: {
-      goal:        { include: { category: true } },
+      goal: { include: { category: true } },
       completions: true,
     },
   },
@@ -22,8 +22,8 @@ const WEEK_WITH_GOALS = {
 // ─────────────────────────────────────────────────────────────────────────────
 function getISOWeekInfo(date) {
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  const dayNum = d.getUTCDay() || 7;           // Mon=1 … Sun=7
-  d.setUTCDate(d.getUTCDate() + 4 - dayNum);  // nearest Thursday
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
   const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
   return { year: d.getUTCFullYear(), week: weekNo };
@@ -44,8 +44,8 @@ function getISOWeeksInYear(year) {
 // ─────────────────────────────────────────────────────────────────────────────
 function getSundayOfWeek(year, week) {
   // Start with Jan 1, shift to the ISO week's Monday, then back one day to Sunday
-  const jan1   = new Date(year, 0, 1);
-  const dow    = jan1.getDay(); // 0=Sun … 6=Sat
+  const jan1 = new Date(year, 0, 1);
+  const dow = jan1.getDay(); // 0=Sun … 6=Sat
 
   // First ISO Monday of the year
   const firstMonday = new Date(jan1);
@@ -83,7 +83,7 @@ async function getOrCreateWeek(year, weekNumber) {
     // ── 2. Check for missing fixed goals (e.g. a new goal was added after
     //       this week was first created)
     const fixedGoals = await prisma.goal.findMany({
-      where:  { is_fixed: true, is_active: true },
+      where: { is_fixed: true, is_active: true },
       select: { id: true }, // only need IDs for the comparison
     });
 
@@ -108,20 +108,20 @@ async function getOrCreateWeek(year, weekNumber) {
 
     // Refetch only when we actually inserted new rows
     return prisma.week.findUnique({
-      where:   { id: existing.id },
+      where: { id: existing.id },
       include: WEEK_WITH_GOALS,
     });
   }
 
   // ── 3. Week doesn't exist — create it atomically ──────────────────────────
   const startDate = getSundayOfWeek(year, weekNumber);
-  const endDate   = new Date(startDate);
+  const endDate = new Date(startDate);
   endDate.setDate(startDate.getDate() + 6);
   endDate.setHours(23, 59, 59, 999);
 
   // Fetch fixed goals before the transaction (read-only, no need to be inside it)
   const fixedGoals = await prisma.goal.findMany({
-    where:  { is_fixed: true, is_active: true },
+    where: { is_fixed: true, is_active: true },
     select: { id: true },
   });
 
@@ -147,7 +147,7 @@ async function getOrCreateWeek(year, weekNumber) {
 
   // Single fetch with full relations after the transaction
   return prisma.week.findUnique({
-    where:   { id: newWeek.id },
+    where: { id: newWeek.id },
     include: WEEK_WITH_GOALS,
   });
 }
