@@ -36,18 +36,6 @@ export default function OneDayDashboard() {
         loadCurrentWeek();
     }, [loadCurrentWeek]);
 
-    const handleNavigate = async (direction) => {
-        if (!week) return;
-        try {
-            setLoading(true);
-            const res = await api.navigateWeek(week.year, week.week_number, direction);
-            setWeek(res.data);
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const refreshWeek = async () => {
         if (!week) return;
@@ -73,17 +61,6 @@ export default function OneDayDashboard() {
             });
     };
 
-    // Calculate overall progress
-    const getOverallProgress = () => {
-        if (!week?.day_goals || week.day_goals.length === 0) return 0;
-        let totalCheckboxes = 0;
-        let completedCheckboxes = 0;
-        week.day_goals.forEach((dg) => {
-            totalCheckboxes += dg.goal?.times_a_day || 1;
-            completedCheckboxes += dg.completions?.length || 0;
-        });
-        return totalCheckboxes === 0 ? 0 : Math.round((completedCheckboxes / totalCheckboxes) * 100);
-    };
 
     // Get today's day index
     const todayIndex = new Date().getDay(); // 0 = Sunday
@@ -158,16 +135,7 @@ export default function OneDayDashboard() {
                     </div>
                 ) : week ? (
                     <>
-                        {/* <WeekNavigator
-                            week={week}
-                            onNavigate={handleNavigate}
-                            loading={loading}
-                        /> */}
-                        {/* <WeekGoals weekId={week.id} /> */}
 
-                        {/* <WeekProgress progress={getOverallProgress()} /> */}
-
-                        {/* <TimeTrackingDashboard dayGoals={week.day_goals} /> */}
 
                         <div className="grid gap-4">
                             {[0, 1, 2, 3, 4, 5, 6].filter(item => item === todayIndex).map((dayIndex) => (
