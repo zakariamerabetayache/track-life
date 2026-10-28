@@ -33,7 +33,7 @@ export default function RemindersPage() {
   // ── Dialog state ────────────────────────────────────────────────────────────
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const [selectedReminder, setSelectedReminder] = useState(null);
+  const [selectedGoal, setSelectedGoal] = useState(null);
 
   // ── Debounced search ────────────────────────────────────────────────────────
   // Raw `search` updates instantly (so the input feels responsive),
@@ -54,7 +54,7 @@ export default function RemindersPage() {
   // ── Fetch data ──────────────────────────────────────────────────────────────
   const { data: response, isLoading, isError, refetch } = useGoals(queryParams);
 
-  const reminders = response?.data || [];
+  const goals = response?.data || [];
   const meta = response?.meta || { page: 1, pageSize: 10, total: 0, totalPages: 1 };
 
   // ── Callbacks ───────────────────────────────────────────────────────────────
@@ -83,26 +83,26 @@ export default function RemindersPage() {
   }, []);
 
   const handleCreateNew = useCallback(() => {
-    setSelectedReminder(null);
+    setSelectedGoal(null);
     setIsFormOpen(true);
   }, []);
 
-  const handleEdit = useCallback((reminder) => {
-    setSelectedReminder(reminder);
+  const handleEdit = useCallback((goal) => {
+    setSelectedGoal(goal);
     setIsFormOpen(true);
   }, []);
 
-  const handleDelete = useCallback((reminder) => {
-    setSelectedReminder(reminder);
+  const handleDelete = useCallback((goal) => {
+    setSelectedGoal(goal);
     setIsDeleteOpen(true);
   }, []);
 
   const toggleStatusMutation = useToggleGoalStatus();
 
-  const handleToggleStatus = useCallback((reminder, nextChecked) => {
-    if (!reminder?.id) return;
+  const handleToggleStatus = useCallback((goal, nextChecked) => {
+    if (!goal?.id) return;
     toggleStatusMutation.mutate({
-      id: reminder.id,
+      id: goal.id,
       is_active: nextChecked,
     });
   }, [toggleStatusMutation]);
@@ -111,7 +111,7 @@ export default function RemindersPage() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <CrudsHeader title="Reminders" description="Manage your reminders and notifications" />
+      <CrudsHeader title="Goals" description="Manage Goals" />
 
       {/* ── Main content ───────────────────────────────────────────────────── */}
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-6">
@@ -141,13 +141,13 @@ export default function RemindersPage() {
       <ReminderFormDialog
         open={isFormOpen}
         onOpenChange={setIsFormOpen}
-        reminder={selectedReminder}
+        reminder={selectedGoal}
       />
 
       <DeleteReminderDialog
         open={isDeleteOpen}
         onOpenChange={setIsDeleteOpen}
-        reminder={selectedReminder}
+        reminder={selectedGoal}
       />
     </div>
   );
