@@ -1,81 +1,171 @@
 const prisma = require('../db/prisma');
+const asyncHandler = require('../utils/asyncHandler');
+const { NotFoundError } = require('../utils/errors');
 
-// ── GET /api/goals ─────────────────────────────────────────────────────────────
-const getAll = async (req, res, next) => {
-  try {
-    const { is_active, category_id, is_daily } = req.query;
+// ── GET /api/reminders ─────────────────────────────────────────────────────────
+// Server-side pagination, search, filter, and sort.
+const getAll = asyncHandler(async (req, res) => {
+  const query = req.validatedQuery || req.query || {};
+  const page = Number(query.page) > 0 ? Number(query.page) : 1;
+  const pageSize = Number(query.pageSize) > 0 ? Math.min(Number(query.pageSize), 100) : 10;
+  const search = typeof query.search === 'string' ? query.search.trim() : '';
+  const status = query.status || 'all';
+  const sortBy = ['title', 'created_at', 'updated_at'].includes(query.sortBy) ? query.sortBy : 'created_at';
+  const sortOrder = query.sortOrder === 'asc' ? 'asc' : 'desc';
 
-    const where = {};
+  // ── Build WHERE clause ────────────────────────────────────────────────────
+  const where = {};
 
-    // Coerce string query params to booleans
-    if (is_active  !== undefined) where.is_active  = is_active  === 'true';
-    if (is_daily   !== undefined) where.is_daily   = is_daily   === 'true'; // BUG FIX: was === 'false'
-    if (category_id !== undefined) where.category_id = parseInt(category_id);
+  if (search) {
+    where.OR = [
+      { title: { contains: search, mode: 'insensitive' } },
+      { content: { contains: search, mode: 'insensitive' } },
+    ];
+  }
 
-    const goals = await prisma.goal.findMany({
+  if (status !== 'all') {
+    where.is_active = status === 'active';
+  }
+
+  // ── Parallel execution for performance ────────────────────────────────────
+  const [data, total] = await Promise.all([
+    prisma.reminders.findMany({
       where,
-      include: { category: true },
-      orderBy: [{ sort_order: 'asc' }, { created_at: 'asc' }],
-    });
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      orderBy: { [sortBy]: sortOrder },
+    }),
+    prisma.reminders.count({ where }),
+  ]);
 
-    res.json({ success: true, data: goals });
-  } catch (error) {
-    next(error);
+  res.status(200).json({
+    success: true,
+    data,
+    meta: {
+      page,
+      pageSize,
+      total,
+      totalPages: Math.ceil(total / pageSize) || 1,
+    },
+  });
+});
+
+// ── GET /api/reminders/:id ─────────────────────────────────────────────────────
+const getOne = asyncHandler(async (req, res) => {
+  const params = req.validatedParams || req.params;
+  const id = Number(params.id);
+
+  const reminder = await prisma.reminders.findUnique({
+    where: { id },
+  });
+
+  if (!reminder) {
+    throw new NotFoundError(`Reminder with ID ${id} not found.`);
   }
-};
 
-// ── POST /api/goals ────────────────────────────────────────────────────────────
-const create = async (req, res, next) => {
-  try {
-    // req.body already validated + coerced by Zod middleware
-    const { title, category_id, is_fixed, is_daily, times_a_day, sort_order } = req.body;
+  res.status(200).json({
+    success: true,
+    data: reminder,
+  });
+});
 
-    const goal = await prisma.goal.create({
-      data: { title, category_id, is_fixed, is_daily, times_a_day, sort_order },
-      include: { category: true },
-    });
+// ── POST /api/reminders ────────────────────────────────────────────────────────
+const create = asyncHandler(async (req, res) => {
+  const body = req.validatedBody || req.body;
+  const { title, content, is_active } = body;
 
-    res.status(201).json({ success: true, data: goal });
-  } catch (error) {
-    next(error);
+  const reminder = await prisma.reminders.create({
+    data: {
+      title,
+      content,
+      is_active: is_active ?? true,
+    },
+  });
+
+  res.status(201).json({
+    success: true,
+    data: reminder,
+  });
+});
+
+// ── PUT /api/reminders/:id ─────────────────────────────────────────────────────
+const update = asyncHandler(async (req, res) => {
+  const params = req.validatedParams || req.params;
+  const id = Number(params.id);
+  const data = req.validatedBody || req.body;
+
+  const existing = await prisma.reminders.findUnique({
+    where: { id },
+  });
+
+  if (!existing) {
+    throw new NotFoundError(`Reminder with ID ${id} not found.`);
   }
-};
 
-// ── PUT /api/goals/:id ─────────────────────────────────────────────────────────
-const update = async (req, res, next) => {
-  try {
-    const id = parseInt(req.params.id);
+  const updatedReminder = await prisma.reminders.update({
+    where: { id },
+    data,
+  });
 
-    // Zod .strict() already stripped unknown keys — safe to spread directly
-    const goal = await prisma.goal.update({
-      where: { id },
-      data: req.body,
-      include: { category: true },
-    });
+  res.status(200).json({
+    success: true,
+    data: updatedReminder,
+  });
+});
 
-    res.json({ success: true, data: goal });
-  } catch (error) {
-    next(error);
+// ── DELETE /api/reminders/:id ──────────────────────────────────────────────────
+const remove = asyncHandler(async (req, res) => {
+  const params = req.validatedParams || req.params;
+  const id = Number(params.id);
+
+  const existing = await prisma.reminders.findUnique({
+    where: { id },
+  });
+
+  if (!existing) {
+    throw new NotFoundError(`Reminder with ID ${id} not found.`);
   }
-};
 
-// ── DELETE /api/goals/:id ──────────────────────────────────────────────────────
-// Soft delete — sets is_active = false so history is preserved
-const remove = async (req, res, next) => {
-  try {
-    const id = parseInt(req.params.id);
+  await prisma.reminders.delete({
+    where: { id },
+  });
 
-    // select: { id } — we only need to confirm it happened, not return the full record
-    await prisma.goal.update({
-      where: { id },
-      data: { is_active: false },
-      select: { id: true },
-    });
+  res.status(200).json({
+    success: true,
+    message: 'Reminder deleted successfully.',
+  });
+});
 
-    res.json({ success: true, message: 'Goal disabled.' });
-  } catch (error) {
-    next(error);
+// ── PATCH /api/reminders/:id/toggle ────────────────────────────────────────────
+const toggleStatus = asyncHandler(async (req, res) => {
+  const params = req.validatedParams || req.params;
+  const id = Number(params.id);
+  const body = req.validatedBody || req.body || {};
+
+  const existing = await prisma.reminders.findUnique({
+    where: { id },
+  });
+
+  if (!existing) {
+    throw new NotFoundError(`Reminder with ID ${id} not found.`);
   }
-};
 
-module.exports = { getAll, create, update, remove };
+  // If explicit is_active boolean is sent, use it; otherwise toggle
+  const nextStatus = typeof body.is_active === 'boolean'
+    ? body.is_active
+    : !existing.is_active;
+
+  const updatedReminder = await prisma.reminders.update({
+    where: { id },
+    data: { is_active: nextStatus },
+  });
+
+  res.status(200).json({
+    success: true,
+    data: updatedReminder,
+    message: `Reminder ${nextStatus ? 'activated' : 'deactivated'} successfully.`,
+  });
+});
+
+module.exports = { getAll, getOne, create, update, remove, toggleStatus };
+

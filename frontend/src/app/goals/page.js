@@ -3,15 +3,15 @@
 import { useState, useCallback } from "react";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useGoals, useToggleGoalStatus } from "@/features/goals/hooks/use-goals";
-import { RemindersTable } from "@/features/reminders/components/reminders-table";
-import { ReminderFormDialog } from "@/features/reminders/components/reminder-form-dialog";
-import { DeleteReminderDialog } from "@/features/reminders/components/delete-reminder-dialog";
+import { GoalsTable } from "@/features/goals/components/goals-table";
+import { GoalFormDialog } from "@/features/goals/components/goal-form-dialog";
+import { DeleteGoalDialog } from "@/features/goals/components/delete-goal-dialog";
 import CrudsHeader from "@/components/CrudsHeader";
 
 /**
- * RemindersPage — the orchestrator.
+ * goalsPage — the orchestrator.
  *
- * Owns ALL state (table params, dialog visibility, selected reminder).
+ * Owns ALL state (table params, dialog visibility, selected goal).
  * Child components are stateless — they receive values and call callbacks.
  *
  * This pattern (lifting state up to the page) makes the entire flow
@@ -21,7 +21,7 @@ import CrudsHeader from "@/components/CrudsHeader";
  *   page state → useGoals(params) → data/meta → GoalsTable → columns/toolbar/pagination
  *   user action → callback → setState → params change → useGoals refetches automatically
  */
-export default function RemindersPage() {
+export default function GoalsPage() {
   // ── Table state ─────────────────────────────────────────────────────────────
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -115,8 +115,8 @@ export default function RemindersPage() {
 
       {/* ── Main content ───────────────────────────────────────────────────── */}
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-6">
-        <RemindersTable
-          data={reminders}
+        <GoalsTable
+          data={goals}
           isLoading={isLoading}
           isError={isError}
           onRetry={refetch}
@@ -138,16 +138,16 @@ export default function RemindersPage() {
       </main>
 
       {/* ── Dialogs ────────────────────────────────────────────────────────── */}
-      <ReminderFormDialog
+      <GoalFormDialog
         open={isFormOpen}
         onOpenChange={setIsFormOpen}
-        reminder={selectedGoal}
+        goal={selectedGoal}
       />
 
-      <DeleteReminderDialog
+      <DeleteGoalDialog
         open={isDeleteOpen}
         onOpenChange={setIsDeleteOpen}
-        reminder={selectedGoal}
+        goal={selectedGoal}
       />
     </div>
   );

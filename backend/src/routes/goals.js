@@ -1,13 +1,37 @@
 const express = require('express');
-const router  = express.Router();
+const router = express.Router();
 
 const controller = require('../controllers/goals.controller');
-const { validate } = require('../middleware/validate');
-const { createGoalSchema, updateGoalSchema } = require('../schemas/goals.schema');
+const { validate, validateQuery, validateParams } = require('../middleware/validate');
+const {
+    idParamSchema,
+    listGoalsSchema,
+    createGoalSchema,
+    updateGoalSchema,
+    toggleGoalSchema,
+} = require('../schemas/goals.schema');
 
-router.get   ('/',    controller.getAll);
-router.post  ('/',    validate(createGoalSchema),  controller.create);
-router.put   ('/:id', validate(updateGoalSchema),  controller.update);
-router.delete('/:id', controller.remove);
+router.get('/', validateQuery(listGoalsSchema), controller.getAll);
+router.get('/:id', validateParams(idParamSchema), controller.getOne);
+router.post('/', validate(createGoalSchema), controller.create);
+router.put(
+    '/:id',
+    validateParams(idParamSchema),
+    validate(updateGoalSchema),
+    controller.update
+);
+router.patch(
+    '/:id/toggle',
+    validateParams(idParamSchema),
+    validate(toggleGoalSchema),
+    controller.toggleStatus
+);
+router.patch(
+    '/:id',
+    validateParams(idParamSchema),
+    validate(updateGoalSchema),
+    controller.update
+);
+router.delete('/:id', validateParams(idParamSchema), controller.remove);
 
 module.exports = router;
