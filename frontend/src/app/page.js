@@ -6,7 +6,19 @@ import WeekNavigator from "@/components/WeekNavigator";
 import DayCard from "@/components/DayCard";
 import WeekProgress from "@/components/WeekProgress";
 import WeekGoals from "@/components/WeekGoals";
-import TimeTrackingDashboard from "@/components/TimeTrackingDashboard";
+import dynamic from "next/dynamic";
+
+const TimeTrackingDashboard = dynamic(
+  () => import("@/components/TimeTrackingDashboard"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-64 w-full animate-pulse rounded-xl bg-muted/40 border flex items-center justify-center text-sm text-muted-foreground">
+        Loading analytics...
+      </div>
+    ),
+  }
+);
 
 import Link from "next/link";
 import { Settings, Target, LayoutGrid, Bell } from "lucide-react";

@@ -75,7 +75,7 @@ export function useCreateGoal({ onSuccess } = {}) {
 }
 
 // ── Update mutation ────────────────────────────────────────────────────────────
-export function useUpdateReminder({ onSuccess } = {}) {
+export function useUpdateGoal({ onSuccess } = {}) {
     const queryClient = useQueryClient();
 
     return useMutation({
@@ -90,13 +90,14 @@ export function useUpdateReminder({ onSuccess } = {}) {
         },
     });
 }
+export const useUpdateReminder = useUpdateGoal;
 
 // ── Delete mutation ────────────────────────────────────────────────────────────
-export function useDeleteReminder({ onSuccess } = {}) {
+export function useDeleteGoal({ onSuccess } = {}) {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: (id) => remindersApi.remove(id),
+        mutationFn: (id) => goalsApi.remove(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: goalsKeys.lists() });
             toast.success("Goal deleted");
@@ -107,6 +108,7 @@ export function useDeleteReminder({ onSuccess } = {}) {
         },
     });
 }
+export const useDeleteReminder = useDeleteGoal;
 
 // ── Toggle status mutation ───────────────────────────────────────────────────
 export function useToggleGoalStatus() {

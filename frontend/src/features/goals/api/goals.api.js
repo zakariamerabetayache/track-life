@@ -12,7 +12,7 @@ import { fetchAPI } from "@/lib/api";
  *  - Clear boundary between "how to call the server" and "how to cache the response"
  *  - Easy to swap fetch for axios or a generated client later
  */
-export const GoalsApi = {
+export const goalsApi = {
     /**
      * Fetch a paginated, filtered, sorted list of goals.
      * @param {Object} params - { page, pageSize, search, status, sortBy, sortOrder }
@@ -56,3 +56,5 @@ export const GoalsApi = {
             body: JSON.stringify(isActive !== undefined ? { is_active: isActive } : {}),
         }),
 };
+
+export const GoalsApi = goalsApi;
