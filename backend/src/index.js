@@ -6,8 +6,22 @@ const errorHandler = require('./middleware/errorHandler');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// ── Core middleware ───────────────────────────────────────────────────────────
-app.use(cors());
+// ── CORS ──────────────────────────────────────────────────────────────────────
+// Set ALLOWED_ORIGINS env var on Render (comma-separated, e.g. "https://my-app.onrender.com")
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+  : ['http://localhost:3000', 'http://localhost:3001'];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (e.g. curl, Postman, server-to-server)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    callback(new Error(`CORS blocked: origin ${origin} not allowed`));
+  },
+  credentials: true,
+}));
+
 app.use(express.json({ limit: '10kb' })); // prevent oversized payloads
 
 // Request logger

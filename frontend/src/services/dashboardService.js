@@ -2,8 +2,8 @@ const dashboardService = {
   // getBadHubbitsStatus
   async getBadHubbitsStatus() {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api/day-goals';
-      const response = await fetch(`${apiUrl}/dashboard/bad-habits`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      const response = await fetch(`${apiUrl}/day-goals/dashboard/bad-habits`, {
         headers: {
           'Content-Type': 'application/json',
         },

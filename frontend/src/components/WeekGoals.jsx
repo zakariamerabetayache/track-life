@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Plus, Minus, Check, Trash2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+
 export default function WeekGoals({ weekId }) {
     const [formData, setFormData] = useState({
         designation: "",
@@ -21,7 +23,7 @@ export default function WeekGoals({ weekId }) {
 
     async function getWeekGoals() {
         try {
-            const response = await fetch(`http://localhost:3001/api/week-goals?week_id=${weekId}`)
+            const response = await fetch(`${API_BASE}/week-goals?week_id=${weekId}`)
             const result = await response.json()
             if (result.success) {
                 setWeekGoals(result.data)
@@ -34,7 +36,7 @@ export default function WeekGoals({ weekId }) {
     async function addWeekGoals() {
         if (!formData.designation.trim()) return;
         try {
-            const response = await fetch("http://localhost:3001/api/week-goals", {
+            const response = await fetch(`${API_BASE}/week-goals`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -62,7 +64,7 @@ export default function WeekGoals({ weekId }) {
         setWeekGoals(prev => prev.map(g => g.id === goal.id ? { ...g, is_checked: updatedStatus } : g));
 
         try {
-            const response = await fetch(`http://localhost:3001/api/week-goals/${goal.id}`, {
+            const response = await fetch(`${API_BASE}/week-goals/${goal.id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ is_checked: updatedStatus })
@@ -82,7 +84,7 @@ export default function WeekGoals({ weekId }) {
     async function removeWeekGoal(id) {
         setWeekGoals(prev => prev.filter(g => g.id !== id));
         try {
-            const response = await fetch(`http://localhost:3001/api/week-goals/${id}`, { method: "DELETE" });
+            const response = await fetch(`${API_BASE}/week-goals/${id}`, { method: "DELETE" });
             const result = await response.json();
             if (!result.success) {
                 getWeekGoals(); // Re-fetch on error to sync state
