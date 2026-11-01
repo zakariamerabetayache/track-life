@@ -7,17 +7,31 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
-// Set ALLOWED_ORIGINS env var on Render (comma-separated, e.g. "https://my-app.onrender.com")
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
-  : ['http://localhost:3000', 'http://localhost:3001'];
+// Always allows:
+//   - No origin (curl, Postman, server-to-server)
+//   - Any *.vercel.app subdomain (your Vercel preview/production deploys)
+//   - localhost for local development
+// Add extra origins via ALLOWED_ORIGINS env var on Render (comma-separated)
+const extraOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean)
+  : [];
+
+const allowedOrigins = new Set([
+  'http://localhost:3000',
+  'http://localhost:3001',
+  ...extraOrigins,
+]);
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (e.g. curl, Postman, server-to-server)
+    // Allow requests with no origin (curl, Postman, server-to-server)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    callback(new Error(`CORS blocked: origin ${origin} not allowed`));
+    // Allow any Vercel app subdomain (covers preview deploys too)
+    if (/^https:\/\/[^.]+\.vercel\.app$/.test(origin)) return callback(null, true);
+    // Allow explicitly listed origins
+    if (allowedOrigins.has(origin)) return callback(null, true);
+    console.warn(`CORS blocked: ${origin}`);
+    callback(new Error(`CORS: origin ${origin} not allowed`));
   },
   credentials: true,
 }));
