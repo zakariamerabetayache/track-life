@@ -7,7 +7,7 @@ import { toast } from "sonner";
  * Query key factory — keeps keys consistent across all hooks.
  *
  * Pattern from TanStack Query docs:
- *   ["goals"]             → matches ALL reminder queries (for bulk invalidation)
+ *   ["goals"]             → matches ALL goal queries (for bulk invalidation)
  *   ["goals", "list", {}] → matches a specific list configuration
  *   ["goals", "detail", id] → matches a specific record
  *
@@ -23,13 +23,10 @@ export const goalsKeys = {
 
 // ── List hook ──────────────────────────────────────────────────────────────────
 /**
- * Fetches a paginated, filtered, sorted list of reminders.
+ * Fetches a paginated, filtered, sorted list of goals.
  *
  * The query key includes all params, so changing page/search/sort/filter
  * automatically triggers a refetch — no manual refetch() needed.
- *
- * placeholderData is set globally in the QueryClient (providers.jsx)
- * to keep previous data visible while the new page loads.
  */
 export function useGoals(params) {
     return useQuery({

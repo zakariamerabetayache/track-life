@@ -42,16 +42,16 @@ export function DeleteGoalDialog({ open, onOpenChange, goal }) {
     return (
         <AlertDialog open={open} onOpenChange={onOpenChange}>
             <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Delete Goal</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        Are you sure you want to delete{" "}
-                        <span className="font-semibold text-foreground">
-                            &quot;{goal?.name}&quot;
-                        </span>
-                        ? This action cannot be undone.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete Goal</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to delete{" "}
+            <span className="font-semibold text-foreground">
+              &quot;{goal?.title}&quot;
+            </span>
+            ? This action cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogCancel disabled={deleteMutation.isPending}>
                         Cancel

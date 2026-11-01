@@ -16,7 +16,7 @@ import { Plus } from "lucide-react";
  *
  * Composes the generic DataTableToolbar with goal-specific controls:
  *  - Status filter dropdown (All / Active / Inactive)
- *  - "New goal" CTA button
+ *  - "New Goal" CTA button
  *
  * Adding a new filter (e.g. date range) means adding another child here —
  * the generic toolbar handles layout and search automatically.
