@@ -9,10 +9,7 @@ import { useCreateReminder, useUpdateReminder } from "../hooks/use-reminders";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogFooter,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2 } from "lucide-react";
+import ModalHeader from "@/components/ModalHeader"
 
 /**
  * ReminderFormDialog — shared create/edit dialog with full validation.
@@ -117,16 +115,7 @@ export function ReminderFormDialog({ open, onOpenChange, reminder = null }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>
-            {isEditing ? "Edit Reminder" : "Create Reminder"}
-          </DialogTitle>
-          <DialogDescription>
-            {isEditing
-              ? "Update the reminder details below."
-              : "Fill in the details to create a new reminder."}
-          </DialogDescription>
-        </DialogHeader>
+        <ModalHeader designation={"Reminder"} isEditing={isEditing} />
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 py-2">
           {/* ── Title ──────────────────────────────────────────────────────── */}

@@ -11,10 +11,7 @@ import { api } from "@/lib/api";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogFooter,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +25,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
+
+import ModalHeader from "@/components/ModalHeader"
 
 /**
  * GoalFormDialog — shared create/edit dialog for Goals with full validation.
@@ -141,16 +140,7 @@ export function GoalFormDialog({ open, onOpenChange, goal = null }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>
-            {isEditing ? "Edit Goal" : "Create Goal"}
-          </DialogTitle>
-          <DialogDescription>
-            {isEditing
-              ? "Update the goal details below."
-              : "Fill in the details to create a new goal."}
-          </DialogDescription>
-        </DialogHeader>
+        <ModalHeader designation={"Goal"} isEditing={isEditing} />
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-2">
           {/* ── Title ──────────────────────────────────────────────────────── */}
