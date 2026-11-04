@@ -1,42 +1,74 @@
 const prisma = require('../db/prisma');
 const asyncHandler = require('../utils/asyncHandler');
-const { NotFoundError } = require('../utils/errors');
+const { NotFoundError, BadRequestError } = require('../utils/errors');
 
-// ── GET /api/reminders ─────────────────────────────────────────────────────────
-// Server-side pagination, search, filter, and sort.
+// ── GET /api/categories ────────────────────────────────────────────────────────
+// Server-side pagination, search, and sort (or fetch all for dropdowns via ?all=true)
 const getAll = asyncHandler(async (req, res) => {
   const query = req.validatedQuery || req.query || {};
+  const isFetchAll = query.all === 'true';
   const page = Number(query.page) > 0 ? Number(query.page) : 1;
   const pageSize = Number(query.pageSize) > 0 ? Math.min(Number(query.pageSize), 100) : 10;
   const search = typeof query.search === 'string' ? query.search.trim() : '';
-  const status = query.status || 'all';
-  const sortBy = ['title', 'created_at', 'updated_at'].includes(query.sortBy) ? query.sortBy : 'created_at';
-  const sortOrder = query.sortOrder === 'asc' ? 'asc' : 'desc';
+  const sortBy = ['name', 'sort_order', 'created_at', 'updated_at'].includes(query.sortBy)
+    ? query.sortBy
+    : 'sort_order';
+  const sortOrder = query.sortOrder === 'desc' ? 'desc' : 'asc';
 
   // ── Build WHERE clause ────────────────────────────────────────────────────
   const where = {};
-
   if (search) {
-    where.OR = [
-      { title: { contains: search, mode: 'insensitive' } },
-      { content: { contains: search, mode: 'insensitive' } },
-    ];
+    where.name = { contains: search, mode: 'insensitive' };
   }
 
-  if (status !== 'all') {
-    where.is_active = status === 'active';
+  const includeConfig = {
+    _count: {
+      select: {
+        goals: { where: { is_active: true } },
+      },
+    },
+  };
+
+  if (isFetchAll) {
+    const rawData = await prisma.category.findMany({
+      where,
+      orderBy: { [sortBy]: sortOrder },
+      include: includeConfig,
+    });
+
+    const data = rawData.map(({ _count, ...cat }) => ({
+      ...cat,
+      goals_count: _count?.goals ?? 0,
+    }));
+
+    return res.status(200).json({
+      success: true,
+      data,
+      meta: {
+        page: 1,
+        pageSize: data.length,
+        total: data.length,
+        totalPages: 1,
+      },
+    });
   }
 
   // ── Parallel execution for performance ────────────────────────────────────
-  const [data, total] = await Promise.all([
-    prisma.reminders.findMany({
+  const [rawData, total] = await Promise.all([
+    prisma.category.findMany({
       where,
       skip: (page - 1) * pageSize,
       take: pageSize,
       orderBy: { [sortBy]: sortOrder },
+      include: includeConfig,
     }),
-    prisma.reminders.count({ where }),
+    prisma.category.count({ where }),
   ]);
+
+  const data = rawData.map(({ _count, ...cat }) => ({
+    ...cat,
+    goals_count: _count?.goals ?? 0,
+  }));
 
   res.status(200).json({
     success: true,
@@ -50,122 +82,128 @@ const getAll = asyncHandler(async (req, res) => {
   });
 });
 
-// ── GET /api/reminders/:id ─────────────────────────────────────────────────────
+// ── GET /api/categories/:id ─────────────────────────────────────────────────────
 const getOne = asyncHandler(async (req, res) => {
   const params = req.validatedParams || req.params;
   const id = Number(params.id);
 
-  const reminder = await prisma.reminders.findUnique({
+  const category = await prisma.category.findUnique({
     where: { id },
+    include: {
+      _count: {
+        select: {
+          goals: { where: { is_active: true } },
+        },
+      },
+    },
   });
 
-  if (!reminder) {
-    throw new NotFoundError(`Reminder with ID ${id} not found.`);
+  if (!category) {
+    throw new NotFoundError(`Category with ID ${id} not found.`);
   }
+
+  const { _count, ...data } = category;
 
   res.status(200).json({
     success: true,
-    data: reminder,
+    data: {
+      ...data,
+      goals_count: _count?.goals ?? 0,
+    },
   });
 });
 
-// ── POST /api/reminders ────────────────────────────────────────────────────────
+// ── POST /api/categories ────────────────────────────────────────────────────────
 const create = asyncHandler(async (req, res) => {
   const body = req.validatedBody || req.body;
-  const { title, content, is_active } = body;
+  const { name, color, sort_order } = body;
 
-  const reminder = await prisma.reminders.create({
+  const category = await prisma.category.create({
     data: {
-      title,
-      content,
-      is_active: is_active ?? true,
+      name,
+      color: color || '#6366F1',
+      sort_order: sort_order ?? 0,
     },
   });
 
   res.status(201).json({
     success: true,
-    data: reminder,
+    data: {
+      ...category,
+      goals_count: 0,
+    },
   });
 });
 
-// ── PUT /api/reminders/:id ─────────────────────────────────────────────────────
+// ── PUT /api/categories/:id ─────────────────────────────────────────────────────
 const update = asyncHandler(async (req, res) => {
   const params = req.validatedParams || req.params;
   const id = Number(params.id);
   const data = req.validatedBody || req.body;
 
-  const existing = await prisma.reminders.findUnique({
+  const existing = await prisma.category.findUnique({
     where: { id },
   });
 
   if (!existing) {
-    throw new NotFoundError(`Reminder with ID ${id} not found.`);
+    throw new NotFoundError(`Category with ID ${id} not found.`);
   }
 
-  const updatedReminder = await prisma.reminders.update({
+  const updatedCategory = await prisma.category.update({
     where: { id },
     data,
+    include: {
+      _count: {
+        select: {
+          goals: { where: { is_active: true } },
+        },
+      },
+    },
   });
+
+  const { _count, ...catData } = updatedCategory;
 
   res.status(200).json({
     success: true,
-    data: updatedReminder,
+    data: {
+      ...catData,
+      goals_count: _count?.goals ?? 0,
+    },
   });
 });
 
-// ── DELETE /api/reminders/:id ──────────────────────────────────────────────────
+// ── DELETE /api/categories/:id ──────────────────────────────────────────────────
 const remove = asyncHandler(async (req, res) => {
   const params = req.validatedParams || req.params;
   const id = Number(params.id);
 
-  const existing = await prisma.reminders.findUnique({
+  const existing = await prisma.category.findUnique({
     where: { id },
+    include: {
+      _count: {
+        select: { goals: true },
+      },
+    },
   });
 
   if (!existing) {
-    throw new NotFoundError(`Reminder with ID ${id} not found.`);
+    throw new NotFoundError(`Category with ID ${id} not found.`);
   }
 
-  await prisma.reminders.delete({
+  if (existing._count?.goals > 0) {
+    throw new BadRequestError(
+      `Cannot delete: ${existing._count.goals} goal(s) still reference this category.`
+    );
+  }
+
+  await prisma.category.delete({
     where: { id },
   });
 
   res.status(200).json({
     success: true,
-    message: 'Reminder deleted successfully.',
+    message: 'Category deleted successfully.',
   });
 });
 
-// ── PATCH /api/reminders/:id/toggle ────────────────────────────────────────────
-const toggleStatus = asyncHandler(async (req, res) => {
-  const params = req.validatedParams || req.params;
-  const id = Number(params.id);
-  const body = req.validatedBody || req.body || {};
-
-  const existing = await prisma.reminders.findUnique({
-    where: { id },
-  });
-
-  if (!existing) {
-    throw new NotFoundError(`Reminder with ID ${id} not found.`);
-  }
-
-  // If explicit is_active boolean is sent, use it; otherwise toggle
-  const nextStatus = typeof body.is_active === 'boolean'
-    ? body.is_active
-    : !existing.is_active;
-
-  const updatedReminder = await prisma.reminders.update({
-    where: { id },
-    data: { is_active: nextStatus },
-  });
-
-  res.status(200).json({
-    success: true,
-    data: updatedReminder,
-    message: `Reminder ${nextStatus ? 'activated' : 'deactivated'} successfully.`,
-  });
-});
-
-module.exports = { getAll, getOne, create, update, remove, toggleStatus };
-
+module.exports = { getAll, getOne, create, update, remove };

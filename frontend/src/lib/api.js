@@ -72,7 +72,10 @@ export const api = {
     fetchAPI(`/goals/${id}`, { method: 'DELETE' }),
 
   // Categories
-  getCategories: () => fetchAPI('/categories'),
+  getCategories: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return fetchAPI(`/categories${query ? `?${query}` : "?all=true"}`);
+  },
   createCategory: (data) =>
     fetchAPI('/categories', { method: 'POST', body: JSON.stringify(data) }),
   updateCategory: (id, data) =>
