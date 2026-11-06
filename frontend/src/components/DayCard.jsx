@@ -30,7 +30,6 @@ export default function DayCard({ dayName, dayIndex, dayGoals, weekId, isToday, 
   // Separate fixed and manual goals
   const fixedGoals = dayGoals.filter(dg => dg.goal?.is_fixed).sort((a, b) => (a.goal?.sort_order || 0) - (b.goal?.sort_order || 0));
   const manualGoals = dayGoals.filter(dg => !dg.goal?.is_fixed).sort((a, b) => (a.goal?.sort_order || 0) - (b.goal?.sort_order || 0)).sort((a, b) => (a.created_at || 0) - (b.created_at || 0));
-  console.log("manualGoals----->", JSON.stringify(manualGoals))
   const handleGoalAdded = () => {
     setDialogOpen(false);
     onRefresh();

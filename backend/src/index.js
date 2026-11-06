@@ -6,6 +6,7 @@ const errorHandler = require('./middleware/errorHandler');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+
 // ── CORS ──────────────────────────────────────────────────────────────────────
 // Set ALLOWED_ORIGINS env var on Render (comma-separated, e.g. "https://my-app.onrender.com")
 const allowedOrigins = process.env.ALLOWED_ORIGINS

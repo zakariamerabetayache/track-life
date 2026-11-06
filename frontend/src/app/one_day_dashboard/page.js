@@ -1,20 +1,21 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import WeekNavigator from "@/components/WeekNavigator";
 import DayCard from "@/components/DayCard";
-import WeekProgress from "@/components/WeekProgress";
-import WeekGoals from "@/components/WeekGoals";
-import TimeTrackingDashboard from "@/components/TimeTrackingDashboard";
-
-import Link from "next/link";
-import { Settings, Target, LayoutGrid, Bell } from "lucide-react";
-import { Button } from "@/components/ui/button";
-
+import CrudsHeader from "@/components/CrudsHeader"
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+import { OneDayCard } from "../../components/OneDayCard"
 
 export default function OneDayDashboard() {
+
+    let weekdata = useQuery({
+        queryFn: loadCurrentWeek,
+        queryKey: ['week']
+    })
+
+    console.log(JSON.stringify(weekdata))
     const [week, setWeek] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -68,57 +69,12 @@ export default function OneDayDashboard() {
     return (
         <div className="min-h-screen flex flex-col">
             {/* Header */}
-            <header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                            <Target className="h-5 w-5 text-white" />
-                        </div>
-                        <h1 className="text-xl font-bold tracking-tight">Track Life</h1>
-                    </div>
-                    <nav className="flex items-center gap-2">
-                        <Link href="/dashboard">
-                            <Button variant="ghost" size="sm" className="gap-2">
-                                <LayoutGrid className="h-4 w-4" />
-                                <span className="hidden sm:inline">Dashboard</span>
-                            </Button>
-                        </Link>
-                        <Link href="/goals">
-                            <Button variant="ghost" size="sm" className="gap-2">
-                                <LayoutGrid className="h-4 w-4" />
-                                <span className="hidden sm:inline">Goals</span>
-                            </Button>
-                        </Link>
-                        <Link href="/categories">
-                            <Button variant="ghost" size="sm" className="gap-2">
-                                <Settings className="h-4 w-4" />
-                                <span className="hidden sm:inline">Categories</span>
-                            </Button>
-                        </Link>
-                        <Link href="/reminders">
-                            <Button variant="ghost" size="sm" className="gap-2">
-                                <Bell className="h-4 w-4" />
-                                <span className="hidden sm:inline">Reminders</span>
-                            </Button>
-                        </Link>
-                        <Link href="/reminders_display">
-                            <Button variant="ghost" size="sm" className="gap-2">
-                                <Bell className="h-4 w-4" />
-                                <span className="hidden sm:inline">Reminders Display</span>
-                            </Button>
-                        </Link>
-                        <Link href="/one_day_dashboard">
-                            <Button variant="ghost" size="sm" className="gap-2">
-                                <Bell className="h-4 w-4" />
-                                <span className="hidden sm:inline">One Day Dashboard</span>
-                            </Button>
-                        </Link>
-                    </nav>
-                </div>
-            </header>
+
+            <CrudsHeader title="day dash" description="track day goals and habits " />
+
 
             {/* Main Content */}
-            <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 space-y-6">
+            {/* <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 space-y-6">
                 {error && (
                     <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 text-destructive text-sm">
                         {error}
@@ -152,7 +108,8 @@ export default function OneDayDashboard() {
                         </div>
                     </>
                 ) : null}
-            </main>
+            </main> */}
+            <OneDayCard />
 
             {/* Footer */}
             <footer className="border-t border-border/40 py-4 text-center text-xs text-muted-foreground">

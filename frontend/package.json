@@ -6,7 +6,9 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "delete-logs": "node scripts/remove-console-logs.mjs --write",
+    "find-logs": "node scripts/remove-console-logs.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
