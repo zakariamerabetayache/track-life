@@ -2,9 +2,8 @@
 
 import React, { useState, useMemo } from "react";
 import { Sun, Moon, Target, Plus, X, Check } from "lucide-react";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
 
 // ── FAKE DATA ────────────────────────────────────────────────────────────────
 
@@ -85,9 +84,9 @@ const PERIODS = [
 ];
 
 const HABITS = [
-  { id: "h1", label: "No Doomscrolling", streak: "14d streak", done: true,  barColor: "#10b981" },
-  { id: "h2", label: "Zero Sugar",        streak: "8d streak",  done: true,  barColor: "#f59e0b" },
-  { id: "h3", label: "Drink 3L Water",    streak: null,          done: true,  barColor: "#06b6d4" },
+  { id: "h1", label: "No Doomscrolling", streak: "14d streak", done: true, barColor: "#10b981" },
+  { id: "h2", label: "Zero Sugar", streak: "8d streak", done: true, barColor: "#f59e0b" },
+  { id: "h3", label: "Drink 3L Water", streak: null, done: true, barColor: "#06b6d4" },
   { id: "h4", label: "No Social Media after 9 PM", streak: null, done: false, barColor: "#475569" },
 ];
 
@@ -95,7 +94,7 @@ const HABITS = [
 
 export default function OneDayCard() {
   const [periods, setPeriods] = useState(PERIODS);
-  const [habits, setHabits]   = useState(HABITS);
+  const [habits, setHabits] = useState(HABITS);
   const [addingTo, setAddingTo] = useState(null);
   const [newLabel, setNewLabel] = useState("");
 
@@ -125,13 +124,7 @@ export default function OneDayCard() {
     setHabits(hs => hs.map(h => h.id !== id ? h : { ...h, done: !h.done }));
 
   const commitAdd = (pid) => {
-    if (newLabel.trim()) {
-      setPeriods(ps => ps.map(p => p.id !== pid ? p : {
-        ...p,
-        items: [...p.items, { id: `c${Date.now()}`, label: newLabel.trim(), done: false }],
-      }));
-    }
-    setNewLabel(""); setAddingTo(null);
+
   };
 
   return (

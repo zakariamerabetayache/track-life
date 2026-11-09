@@ -104,7 +104,7 @@ async function getOrCreateWeek(year, weekNumber) {
     // No gaps — return immediately without another DB round-trip
     if (missing.length === 0) return existing;
 
-    await prisma.dayGoal.createMany({ data: missing });
+    // await prisma.dayGoal.createMany({ data: missing });
 
     // Refetch only when we actually inserted new rows
     return prisma.week.findUnique({
@@ -139,7 +139,7 @@ async function getOrCreateWeek(year, weekNumber) {
           dayGoalsData.push({ week_id: week.id, day_of_week: day, goal_id: goal.id, is_auto: true });
         }
       }
-      await tx.dayGoal.createMany({ data: dayGoalsData });
+      // await tx.dayGoal.createMany({ data: dayGoalsData });
     }
 
     return week;
