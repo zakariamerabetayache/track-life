@@ -1,16 +1,20 @@
 "use client";
 
-import React, { useMemo } from "react";
-import { Sun, Moon, Target, Plus, AlertCircle, RefreshCw } from "lucide-react";
-import { Check } from "lucide-react";
-import { useTodayGoals, useToggleCompletion } from "@/features/weekDashBoard/hooks/use-today-goals";
+import React, { useState, useMemo } from "react";
+import { Sun, Moon, Target, Plus, X, Check, AlertCircle, RefreshCw, Trash2 } from "lucide-react";
+import {
+  useTodayGoals,
+  useToggleCompletion,
+  useAddGoal,
+  useDeleteGoal,
+} from "@/features/weekDashBoard/hooks/use-today-goals";
 
-// ── Static anchors (wake-up / sleep not yet in DB) ────────────────────────────
-const WAKE_UP = "05:15 AM";
-const SLEEP_TARGET = "10:30 PM";
-const SLEEP_GOAL = "7h 15m";
+// ── Fallback anchors (until sleep goal is set up with time_from / time_to) ────
+const DEFAULT_WAKE = "05:15 AM";
+const DEFAULT_SLEEP = "10:30 PM";
+const DEFAULT_GOAL = "7h 15m";
 
-// ── Loading skeleton ──────────────────────────────────────────────────────────
+// ── Loading skeleton for a prayer card ────────────────────────────────────────
 function PeriodSkeleton() {
   return (
     <div
@@ -38,7 +42,7 @@ function Checkbox({ checked, onClick }) {
   return (
     <div
       onClick={onClick}
-      className="h-4 w-4 rounded-sm shrink-0 flex items-center justify-center transition-all cursor-pointer"
+      className="h-4 w-4 rounded-sm shrink-0 flex items-center justify-center transition-all cursor-pointer select-none"
       style={
         checked
           ? { background: "#10b981", border: "1.5px solid #34d399" }
@@ -50,30 +54,89 @@ function Checkbox({ checked, onClick }) {
   );
 }
 
+// ── Inline add-goal input ─────────────────────────────────────────────────────
+function AddInput({ onCommit, onCancel, placeholder = "Goal title..." }) {
+  const [val, setVal] = useState("");
+
+  const submit = () => {
+    if (val.trim()) onCommit(val.trim());
+    setVal("");
+  };
+
+  return (
+    <div className="flex items-center gap-1 pt-1 pb-1 px-3">
+      <input
+        autoFocus
+        value={val}
+        onChange={(e) => setVal(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") submit();
+          if (e.key === "Escape") onCancel();
+        }}
+        placeholder={placeholder}
+        className="flex-1 h-6 text-xs px-2 rounded outline-none"
+        style={{ background: "#0f172a", border: "1px solid #334155", color: "#f1f5f9" }}
+      />
+      <button
+        onClick={submit}
+        className="h-6 w-6 rounded flex items-center justify-center shrink-0"
+        style={{ background: "#0891b2" }}
+        title="Add"
+      >
+        <Check className="h-3 w-3 text-white" strokeWidth={3} />
+      </button>
+      <button
+        onClick={onCancel}
+        className="h-6 w-6 rounded flex items-center justify-center shrink-0"
+        style={{ background: "#1e293b" }}
+        title="Cancel"
+      >
+        <X className="h-3 w-3" style={{ color: "#94a3b8" }} />
+      </button>
+    </div>
+  );
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 export default function OneDayCard() {
-  const { prayerPeriods, habits, progress, isLoading, error, refetch } = useTodayGoals();
+  const { prayerPeriods, habits, progress, weekId, dayOfWeek, sleepData, isLoading, error, refetch } =
+    useTodayGoals();
   const toggleMutation = useToggleCompletion();
+  const addGoalMutation = useAddGoal();
+  const deleteGoalMutation = useDeleteGoal();
 
-  // Today label
+  // Which section is showing the add input: "fajr"|"dhuhr"|...|"habits"|null
+  const [addingTo, setAddingTo] = useState(null);
+
   const today = useMemo(
     () => new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }),
     []
   );
 
   // Circular SVG ring
-  const R = 42;
-  const C = 2 * Math.PI * R;
+  const R = 42, C = 2 * Math.PI * R;
   const offset = C - (progress / 100) * C;
 
-  // Handler — toggles occurrence_index 0 (single-occurrence goals)
-  const handleToggle = (dayGoalId, currentDone) => {
-    toggleMutation.mutate({
-      dayGoalId,
-      occurrenceIndex: 0,
-      isCompleted: !currentDone,
-    });
+  const handleToggle = (dayGoalId, done) => {
+    toggleMutation.mutate({ dayGoalId, occurrenceIndex: 0, isCompleted: !done });
   };
+
+  const handleAdd = (prayerTime, title) => {
+    if (!weekId) return;
+    addGoalMutation.mutate(
+      { weekId, dayOfWeek, prayerTime, title },
+      { onSuccess: () => setAddingTo(null) }
+    );
+  };
+
+  const handleDelete = (dayGoalId) => {
+    deleteGoalMutation.mutate(dayGoalId);
+  };
+
+  // Anchors — from API sleep_data if available, else defaults
+  const wakeUp = sleepData?.wake_up ?? DEFAULT_WAKE;
+  const sleepTarget = sleepData?.sleep_target ?? DEFAULT_SLEEP;
+  const sleepGoal = sleepData?.goal_duration ?? DEFAULT_GOAL;
 
   return (
     <div
@@ -100,7 +163,7 @@ export default function OneDayCard() {
         {/* Date */}
         <span className="text-base font-medium" style={{ color: "#cbd5e1" }}>{today}</span>
 
-        {/* Progress Ring */}
+        {/* Progress ring */}
         <div className="relative shrink-0" style={{ width: 80, height: 80 }}>
           <svg width="80" height="80" viewBox="0 0 96 96" style={{ transform: "rotate(-90deg)" }}>
             <circle cx="48" cy="48" r={R} strokeWidth="6" fill="none" stroke="#1e293b" />
@@ -137,14 +200,11 @@ export default function OneDayCard() {
             className="flex items-center gap-3 rounded-full px-4 py-2"
             style={{ background: "#1c1200", border: "1px solid #854d0e" }}
           >
-            <div
-              className="h-7 w-7 rounded-full flex items-center justify-center shrink-0"
-              style={{ background: "#451a03" }}
-            >
+            <div className="h-7 w-7 rounded-full flex items-center justify-center shrink-0" style={{ background: "#451a03" }}>
               <Sun className="h-3.5 w-3.5" style={{ color: "#fbbf24" }} />
             </div>
             <span className="text-sm" style={{ color: "#94a3b8" }}>Wake Up:</span>
-            <span className="text-sm font-bold text-white">{WAKE_UP}</span>
+            <span className="text-sm font-bold text-white">{wakeUp}</span>
           </div>
 
           {/* Sleep Target */}
@@ -152,17 +212,14 @@ export default function OneDayCard() {
             className="flex items-center gap-3 rounded-full px-4 py-2"
             style={{ background: "#0d0b1f", border: "1px solid #3730a3" }}
           >
-            <div
-              className="h-7 w-7 rounded-full flex items-center justify-center shrink-0"
-              style={{ background: "#1e1b4b" }}
-            >
+            <div className="h-7 w-7 rounded-full flex items-center justify-center shrink-0" style={{ background: "#1e1b4b" }}>
               <Moon className="h-3.5 w-3.5" style={{ color: "#818cf8" }} />
             </div>
             <span className="text-sm" style={{ color: "#94a3b8" }}>Sleep Target:</span>
-            <span className="text-sm font-bold text-white">{SLEEP_TARGET}</span>
+            <span className="text-sm font-bold text-white">{sleepTarget}</span>
             <div style={{ width: 1, height: 14, background: "#3730a3", margin: "0 4px" }} />
             <span className="text-sm" style={{ color: "#94a3b8" }}>Goal:</span>
-            <span className="text-sm font-semibold text-white">{SLEEP_GOAL}</span>
+            <span className="text-sm font-semibold text-white">{sleepGoal}</span>
           </div>
 
         </div>
@@ -175,17 +232,13 @@ export default function OneDayCard() {
             Daily Flow
           </p>
           {error && (
-            <button
-              onClick={refetch}
-              className="flex items-center gap-1 text-xs"
-              style={{ color: "#ef4444" }}
-            >
+            <button onClick={refetch} className="flex items-center gap-1 text-xs" style={{ color: "#ef4444" }}>
               <RefreshCw className="h-3 w-3" /> Retry
             </button>
           )}
         </div>
 
-        {/* Error state */}
+        {/* Error */}
         {error && !isLoading && (
           <div
             className="flex-1 flex flex-col items-center justify-center gap-3 rounded-xl"
@@ -193,34 +246,27 @@ export default function OneDayCard() {
           >
             <AlertCircle className="h-8 w-8" style={{ color: "#ef4444" }} />
             <p className="text-sm" style={{ color: "#94a3b8" }}>{error}</p>
-            <button
-              onClick={refetch}
-              className="text-xs px-3 py-1.5 rounded-lg"
-              style={{ background: "#1e293b", color: "#cbd5e1" }}
-            >
+            <button onClick={refetch} className="text-xs px-3 py-1.5 rounded-lg" style={{ background: "#1e293b", color: "#cbd5e1" }}>
               Retry
             </button>
           </div>
         )}
 
-        {/* Loading state */}
+        {/* Skeleton */}
         {isLoading && !error && (
           <div className="grid grid-cols-5 gap-3 flex-1 min-h-0">
             {[1, 2, 3, 4, 5].map((i) => <PeriodSkeleton key={i} />)}
           </div>
         )}
 
-        {/* Data state */}
+        {/* Prayer cards */}
         {!isLoading && !error && (
           <div className="grid grid-cols-5 gap-3 flex-1 min-h-0">
             {prayerPeriods.map((period) => (
               <div
                 key={period.key}
                 className="rounded-xl flex flex-col overflow-hidden"
-                style={{
-                  background: period.bgColor,
-                  border: `1.5px solid ${period.borderColor}`,
-                }}
+                style={{ background: period.bgColor, border: `1.5px solid ${period.borderColor}` }}
               >
                 {/* Card header */}
                 <div
@@ -238,28 +284,53 @@ export default function OneDayCard() {
                   </span>
                 </div>
 
-                {/* Items */}
-                <div className="flex flex-col gap-2 px-3 pt-2.5 flex-1 overflow-y-auto pb-2">
-                  {period.items.length === 0 ? (
-                    <p className="text-xs" style={{ color: "#475569" }}>No goals yet</p>
-                  ) : (
-                    period.items.map((item) => (
-                      <div
-                        key={item.dayGoalId}
-                        className="flex items-center gap-2 group"
-                        onClick={() => handleToggle(item.dayGoalId, item.done)}
+                {/* Items list */}
+                <div className="flex flex-col gap-2 px-3 pt-2.5 flex-1 overflow-y-auto pb-1">
+                  {period.items.map((item) => (
+                    <div key={item.dayGoalId} className="flex items-center gap-2 group">
+                      <Checkbox checked={item.done} onClick={() => handleToggle(item.dayGoalId, item.done)} />
+                      <span
+                        className="text-sm leading-snug flex-1 transition-colors"
+                        style={{ color: item.done ? "#e2e8f0" : "#64748b" }}
                       >
-                        <Checkbox checked={item.done} />
-                        <span
-                          className="text-sm leading-snug transition-colors"
-                          style={{ color: item.done ? "#e2e8f0" : "#64748b" }}
+                        {item.label}
+                      </span>
+                      {/* Delete button — only for non-fixed goals */}
+                      {!item.isFixed && (
+                        <button
+                          onClick={() => handleDelete(item.dayGoalId)}
+                          className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                          style={{ color: "#475569" }}
+                          title="Remove goal"
                         >
-                          {item.label}
-                        </span>
-                      </div>
-                    ))
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+
+                  {/* Inline add input */}
+                  {addingTo === period.key && (
+                    <AddInput
+                      placeholder={`Add to ${period.name}...`}
+                      onCommit={(title) => handleAdd(period.key, title)}
+                      onCancel={() => setAddingTo(null)}
+                    />
                   )}
                 </div>
+
+                {/* Add goal footer button */}
+                {addingTo !== period.key && (
+                  <button
+                    onClick={() => setAddingTo(period.key)}
+                    className="flex items-center gap-1 px-3 py-2 text-[11px] font-medium transition-colors shrink-0"
+                    style={{ color: "#475569", borderTop: `1px solid ${period.borderColor}30` }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = "#94a3b8")}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = "#475569")}
+                  >
+                    <Plus className="h-3 w-3" /> Add goal
+                  </button>
+                )}
               </div>
             ))}
           </div>
@@ -268,77 +339,103 @@ export default function OneDayCard() {
 
       {/* ══ HABITS ══════════════════════════════════════════════════════════ */}
       <div className="shrink-0">
-        <div
-          className="rounded-2xl p-4"
-          style={{ background: "#111827", border: "1px solid #1f2937" }}
-        >
+        <div className="rounded-2xl p-4" style={{ background: "#111827", border: "1px solid #1f2937" }}>
           <p className="text-sm font-semibold text-white mb-3">Daily Habits &amp; Discipline</p>
 
-          {/* Loading skeleton for habits */}
+          {/* Skeleton */}
           {isLoading && (
             <div className="grid grid-cols-4 gap-3">
               {[1, 2, 3, 4].map((i) => (
-                <div
-                  key={i}
-                  className="rounded-xl animate-pulse"
-                  style={{ background: "#0f172a", border: "1px solid #1e293b", height: 60 }}
-                />
+                <div key={i} className="rounded-xl animate-pulse" style={{ background: "#0f172a", border: "1px solid #1e293b", height: 60 }} />
               ))}
             </div>
           )}
 
           {/* Habit pills */}
-          {!isLoading && habits.length === 0 && (
-            <p className="text-xs" style={{ color: "#475569" }}>
-              No habit goals found. Add goals with no prayer time assigned.
-            </p>
-          )}
+          {!isLoading && (
+            <>
+              {habits.length === 0 && addingTo !== "habits" && (
+                <p className="text-xs mb-3" style={{ color: "#475569" }}>
+                  No habit goals yet. Goals without a prayer time appear here.
+                </p>
+              )}
 
-          {!isLoading && habits.length > 0 && (
-            <div className="grid grid-cols-4 gap-3">
-              {habits.map((habit) => (
-                <div
-                  key={habit.dayGoalId}
-                  onClick={() => handleToggle(habit.dayGoalId, habit.done)}
-                  className="relative rounded-xl overflow-hidden cursor-pointer transition-all"
-                  style={{
-                    background: "#0f172a",
-                    border: "1px solid #1e293b",
-                    paddingBottom: "14px",
-                  }}
-                >
-                  <div className="flex items-center justify-between gap-2 px-3 pt-3 pb-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Checkbox checked={habit.done} />
-                      <span
-                        className="text-xs font-medium leading-tight truncate"
-                        style={{ color: habit.done ? "#e2e8f0" : "#64748b" }}
-                      >
-                        {habit.label}
-                      </span>
+              {habits.length > 0 && (
+                <div className="grid grid-cols-4 gap-3 mb-3">
+                  {habits.map((habit) => (
+                    <div
+                      key={habit.dayGoalId}
+                      className="relative rounded-xl overflow-hidden cursor-pointer transition-all group"
+                      style={{ background: "#0f172a", border: "1px solid #1e293b", paddingBottom: "14px" }}
+                    >
+                      <div className="flex items-center justify-between gap-2 px-3 pt-3 pb-2">
+                        <div
+                          className="flex items-center gap-2 min-w-0 flex-1"
+                          onClick={() => handleToggle(habit.dayGoalId, habit.done)}
+                        >
+                          <Checkbox checked={habit.done} />
+                          <span
+                            className="text-xs font-medium leading-tight truncate"
+                            style={{ color: habit.done ? "#e2e8f0" : "#64748b" }}
+                          >
+                            {habit.label}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {habit.streak > 0 && (
+                            <span className="text-xs font-semibold whitespace-nowrap" style={{ color: "#fbbf24" }}>
+                              🔥 {habit.streak}d
+                            </span>
+                          )}
+                          {/* Delete button — only for non-fixed habits */}
+                          {!habit.isFixed && (
+                            <button
+                              onClick={() => handleDelete(habit.dayGoalId)}
+                              className="opacity-0 group-hover:opacity-100 transition-opacity"
+                              style={{ color: "#475569" }}
+                              title="Remove habit"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Bottom color bar */}
+                      <div
+                        className="absolute bottom-0 left-0 right-0"
+                        style={{
+                          height: 3,
+                          background: habit.done ? habit.barColor : "#1e293b",
+                          boxShadow: habit.done ? `0 0 8px ${habit.barColor}cc` : "none",
+                        }}
+                      />
                     </div>
-                    {habit.streak > 0 && (
-                      <span
-                        className="text-xs font-semibold shrink-0 whitespace-nowrap"
-                        style={{ color: "#fbbf24" }}
-                      >
-                        🔥 {habit.streak}d
-                      </span>
-                    )}
-                  </div>
+                  ))}
+                </div>
+              )}
 
-                  {/* Bottom color bar */}
-                  <div
-                    className="absolute bottom-0 left-0 right-0"
-                    style={{
-                      height: 3,
-                      background: habit.done ? habit.barColor : "#1e293b",
-                      boxShadow: habit.done ? `0 0 8px ${habit.barColor}cc` : "none",
-                    }}
+              {/* Add habit inline input */}
+              {addingTo === "habits" ? (
+                <div className="mt-1">
+                  <AddInput
+                    placeholder="Add a habit..."
+                    onCommit={(title) => handleAdd(null, title)}
+                    onCancel={() => setAddingTo(null)}
                   />
                 </div>
-              ))}
-            </div>
+              ) : (
+                <button
+                  onClick={() => setAddingTo("habits")}
+                  className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg transition-colors"
+                  style={{ color: "#475569", border: "1px dashed #334155" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = "#94a3b8")}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = "#475569")}
+                >
+                  <Plus className="h-3 w-3" /> Add habit
+                </button>
+              )}
+            </>
           )}
         </div>
       </div>

@@ -1,4 +1,104 @@
 const prisma = require('../db/prisma');
+const { getISOWeekInfo, getOrCreateWeek } = require('../utils/weekHelpers');
+
+// ── 5 Fixed Prayers Configuration ─────────────────────────────────────────────
+const FIVE_PRAYERS = [
+  { key: 'fajr', title: 'Fajr Prayer' },
+  { key: 'dhuhr', title: 'Dhuhr Prayer' },
+  { key: 'asr', title: 'Asr Prayer' },
+  { key: 'maghrib', title: 'Maghrib Prayer' },
+  { key: 'isha', title: 'Isha Prayer' },
+];
+
+/** Ensures that for the given week & day, each of the 5 prayers has a fixed DayGoal */
+async function ensureFivePrayersForToday(weekId, dayOfWeek) {
+  // Find Worship category if available
+  const worshipCategory = await prisma.category.findFirst({
+    where: { name: { equals: 'Worship', mode: 'insensitive' } },
+  });
+
+  for (let i = 0; i < FIVE_PRAYERS.length; i++) {
+    const { key, title } = FIVE_PRAYERS[i];
+
+    // Find or create the Goal
+    let goal = await prisma.goal.findFirst({
+      where: { title: { equals: title, mode: 'insensitive' } },
+    });
+
+    if (!goal) {
+      goal = await prisma.goal.create({
+        data: {
+          title,
+          category_id: worshipCategory ? worshipCategory.id : null,
+          is_fixed: true,
+          times_a_day: 1,
+          sort_order: i,
+          is_daily: true,
+        },
+      });
+    }
+
+    // Check if DayGoal already exists for today
+    const existing = await prisma.dayGoal.findUnique({
+      where: {
+        week_id_day_of_week_goal_id: {
+          week_id: weekId,
+          day_of_week: dayOfWeek,
+          goal_id: goal.id,
+        },
+      },
+    });
+
+    if (!existing) {
+      await prisma.dayGoal.create({
+        data: {
+          week_id: weekId,
+          day_of_week: dayOfWeek,
+          goal_id: goal.id,
+          prayer_time: key,
+          is_auto: true,
+        },
+      });
+    } else if (existing.prayer_time !== key || !existing.is_auto) {
+      await prisma.dayGoal.update({
+        where: { id: existing.id },
+        data: { prayer_time: key, is_auto: true },
+      });
+    }
+  }
+}
+
+// ── Time helper utilities for sleep / wake up schedule ─────────────────────────
+function calcHoursBetween(from, to) {
+  if (!from || !to) return 0;
+  const [fh, fm] = from.split(':').map(Number);
+  const [th, tm] = to.split(':').map(Number);
+  if (isNaN(fh) || isNaN(fm) || isNaN(th) || isNaN(tm)) return 0;
+  const fromMins = fh * 60 + fm;
+  const toMins = th * 60 + tm;
+  const diffMins = toMins >= fromMins ? toMins - fromMins : 24 * 60 - fromMins + toMins;
+  return Math.round((diffMins / 60) * 100) / 100;
+}
+
+function timeStrTo12h(timeStr) {
+  if (!timeStr) return null;
+  const [hStr, mStr] = timeStr.split(':');
+  const h = parseInt(hStr, 10);
+  const m = parseInt(mStr, 10);
+  if (isNaN(h) || isNaN(m)) return null;
+  const period = h >= 12 ? 'PM' : 'AM';
+  const displayH = h % 12 === 0 ? 12 : h % 12;
+  const displayM = m < 10 ? `0${m}` : m;
+  return `${displayH < 10 ? `0${displayH}` : displayH}:${displayM} ${period}`;
+}
+
+function formatHoursAndMins(h) {
+  if (!h || h === 0) return '0h';
+  const hrs = Math.floor(h);
+  const mins = Math.round((h - hrs) * 60);
+  if (mins === 0) return `${hrs}h`;
+  return `${hrs}h ${mins}m`;
+}
 
 // ── POST /api/day-goals ────────────────────────────────────────────────────────
 // Can create a brand-new goal on the fly via new_goal, OR link an existing goal_id.
@@ -232,6 +332,7 @@ function computeStreaks(doneDates) {
 
 // ── GET /api/day-goals/today ──────────────────────────────────────────────────
 // Returns today's day goals from the current week, with a streak count per goal.
+// - 5 prayers are guaranteed as fixed goals at the top of their respective cards
 // - prayer_time is set  → belongs to a prayer period card
 // - prayer_time is null → belongs to the habits section
 const getToday = async (req, res, next) => {
@@ -239,28 +340,21 @@ const getToday = async (req, res, next) => {
     const today = new Date();
     const todayDayOfWeek = today.getDay(); // 0 = Sunday … 6 = Saturday
 
-    // ── 1. Find current week ──────────────────────────────────────────────────
-    // ISO week helpers live in weekHelpers but we only need the year/week to look
-    // up the week row; using a date range query is simpler here.
-    const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const endOfToday   = new Date(startOfToday);
-    endOfToday.setHours(23, 59, 59, 999);
-
-    const currentWeek = await prisma.week.findFirst({
-      where: {
-        start_date: { lte: endOfToday },
-        end_date:   { gte: startOfToday },
-      },
-    });
+    // ── 1. Find or create current week ────────────────────────────────────────
+    const { year, week: weekNumber } = getISOWeekInfo(today);
+    const currentWeek = await getOrCreateWeek(year, weekNumber);
 
     if (!currentWeek) {
-      return res.json({ success: true, data: { week_id: null, day_of_week: todayDayOfWeek, day_goals: [] } });
+      return res.json({ success: true, data: { week_id: null, day_of_week: todayDayOfWeek, sleep_data: null, day_goals: [] } });
     }
 
-    // ── 2. Fetch today's day goals ────────────────────────────────────────────
+    // ── 2. Ensure 5 fixed prayers exist for today ─────────────────────────────
+    await ensureFivePrayersForToday(currentWeek.id, todayDayOfWeek);
+
+    // ── 3. Fetch today's day goals ────────────────────────────────────────────
     const todayGoals = await prisma.dayGoal.findMany({
       where: {
-        week_id:     currentWeek.id,
+        week_id: currentWeek.id,
         day_of_week: todayDayOfWeek,
       },
       include: {
@@ -268,31 +362,65 @@ const getToday = async (req, res, next) => {
         completions: true,
       },
       orderBy: [
-        { goal: { is_fixed: 'desc' } },
+        { is_auto: 'desc' },
         { goal: { sort_order: 'asc' } },
+        { id: 'asc' },
       ],
     });
 
-    if (todayGoals.length === 0) {
-      return res.json({ success: true, data: { week_id: currentWeek.id, day_of_week: todayDayOfWeek, day_goals: [] } });
+    // ── 4. Find sleep / wake up schedule ──────────────────────────────────────
+    const keywords = ['sleep', 'نوم', 'النوم'];
+    let sleepGoalMatch = todayGoals.find((dg) =>
+      keywords.some((kw) => {
+        const title = (dg.goal?.title ?? '').toLowerCase();
+        const cat = (dg.goal?.category?.name ?? '').toLowerCase();
+        return title.includes(kw.toLowerCase()) || cat.includes(kw.toLowerCase());
+      }) && dg.time_from && dg.time_to
+    );
+
+    if (!sleepGoalMatch) {
+      sleepGoalMatch = await prisma.dayGoal.findFirst({
+        where: {
+          week_id: currentWeek.id,
+          time_from: { not: null },
+          time_to: { not: null },
+          goal: {
+            OR: [
+              { title: { contains: 'sleep', mode: 'insensitive' } },
+              { title: { contains: 'نوم' } },
+              { category: { name: { contains: 'sleep', mode: 'insensitive' } } },
+              { category: { name: { contains: 'نوم' } } },
+            ],
+          },
+        },
+      });
     }
 
-    // ── 3. Compute streak for each unique goal ────────────────────────────────
-    // Fetch all past day_goals (with completions) for every goal that appears today.
+    let sleepData = null;
+    if (sleepGoalMatch?.time_from && sleepGoalMatch?.time_to) {
+      const hours = calcHoursBetween(sleepGoalMatch.time_from, sleepGoalMatch.time_to);
+      sleepData = {
+        wake_up: timeStrTo12h(sleepGoalMatch.time_to),
+        sleep_target: timeStrTo12h(sleepGoalMatch.time_from),
+        goal_duration: formatHoursAndMins(hours),
+      };
+    }
+
+    // ── 5. Compute streak for each unique goal ────────────────────────────────
     const goalIds = [...new Set(todayGoals.map((dg) => dg.goal_id))];
 
     const pastDayGoals = await prisma.dayGoal.findMany({
       where: { goal_id: { in: goalIds } },
       include: {
         completions: { select: { id: true } },
-        week:        { select: { start_date: true } },
+        week: { select: { start_date: true } },
       },
     });
 
     // Build a map: goalId → sorted array of "YYYY-MM-DD" dates on which it was completed
     const doneDatesByGoal = {};
     for (const dg of pastDayGoals) {
-      if (dg.completions.length === 0) continue; // not completed that day — skip
+      if (dg.completions.length === 0) continue;
 
       const d = new Date(dg.week.start_date);
       d.setDate(d.getDate() + dg.day_of_week);
@@ -309,11 +437,10 @@ const getToday = async (req, res, next) => {
         ? [...doneDatesByGoal[goalId]].sort()
         : [];
       const streaks = computeStreaks(dates);
-      // streaks[0] is the most recent; its count is the current streak
       streakByGoal[goalId] = streaks.length > 0 ? streaks[0].count : 0;
     }
 
-    // ── 4. Attach streak to each day goal and return ──────────────────────────
+    // ── 6. Attach streak to each day goal and return ──────────────────────────
     const enriched = todayGoals.map((dg) => ({
       ...dg,
       streak: streakByGoal[dg.goal_id] ?? 0,
@@ -322,9 +449,10 @@ const getToday = async (req, res, next) => {
     res.json({
       success: true,
       data: {
-        week_id:     currentWeek.id,
+        week_id: currentWeek.id,
         day_of_week: todayDayOfWeek,
-        day_goals:   enriched,
+        sleep_data: sleepData,
+        day_goals: enriched,
       },
     });
   } catch (error) {
