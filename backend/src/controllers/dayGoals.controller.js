@@ -230,5 +230,107 @@ function computeStreaks(doneDates) {
   return streaks;
 }
 
-module.exports = { create, remove, update, getBadHubbitsStatus };
+// ── GET /api/day-goals/today ──────────────────────────────────────────────────
+// Returns today's day goals from the current week, with a streak count per goal.
+// - prayer_time is set  → belongs to a prayer period card
+// - prayer_time is null → belongs to the habits section
+const getToday = async (req, res, next) => {
+  try {
+    const today = new Date();
+    const todayDayOfWeek = today.getDay(); // 0 = Sunday … 6 = Saturday
+
+    // ── 1. Find current week ──────────────────────────────────────────────────
+    // ISO week helpers live in weekHelpers but we only need the year/week to look
+    // up the week row; using a date range query is simpler here.
+    const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const endOfToday   = new Date(startOfToday);
+    endOfToday.setHours(23, 59, 59, 999);
+
+    const currentWeek = await prisma.week.findFirst({
+      where: {
+        start_date: { lte: endOfToday },
+        end_date:   { gte: startOfToday },
+      },
+    });
+
+    if (!currentWeek) {
+      return res.json({ success: true, data: { week_id: null, day_of_week: todayDayOfWeek, day_goals: [] } });
+    }
+
+    // ── 2. Fetch today's day goals ────────────────────────────────────────────
+    const todayGoals = await prisma.dayGoal.findMany({
+      where: {
+        week_id:     currentWeek.id,
+        day_of_week: todayDayOfWeek,
+      },
+      include: {
+        goal: { include: { category: true } },
+        completions: true,
+      },
+      orderBy: [
+        { goal: { is_fixed: 'desc' } },
+        { goal: { sort_order: 'asc' } },
+      ],
+    });
+
+    if (todayGoals.length === 0) {
+      return res.json({ success: true, data: { week_id: currentWeek.id, day_of_week: todayDayOfWeek, day_goals: [] } });
+    }
+
+    // ── 3. Compute streak for each unique goal ────────────────────────────────
+    // Fetch all past day_goals (with completions) for every goal that appears today.
+    const goalIds = [...new Set(todayGoals.map((dg) => dg.goal_id))];
+
+    const pastDayGoals = await prisma.dayGoal.findMany({
+      where: { goal_id: { in: goalIds } },
+      include: {
+        completions: { select: { id: true } },
+        week:        { select: { start_date: true } },
+      },
+    });
+
+    // Build a map: goalId → sorted array of "YYYY-MM-DD" dates on which it was completed
+    const doneDatesByGoal = {};
+    for (const dg of pastDayGoals) {
+      if (dg.completions.length === 0) continue; // not completed that day — skip
+
+      const d = new Date(dg.week.start_date);
+      d.setDate(d.getDate() + dg.day_of_week);
+      const dateStr = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+
+      if (!doneDatesByGoal[dg.goal_id]) doneDatesByGoal[dg.goal_id] = new Set();
+      doneDatesByGoal[dg.goal_id].add(dateStr);
+    }
+
+    // Convert sets → sorted arrays → compute current streak
+    const streakByGoal = {};
+    for (const goalId of goalIds) {
+      const dates = doneDatesByGoal[goalId]
+        ? [...doneDatesByGoal[goalId]].sort()
+        : [];
+      const streaks = computeStreaks(dates);
+      // streaks[0] is the most recent; its count is the current streak
+      streakByGoal[goalId] = streaks.length > 0 ? streaks[0].count : 0;
+    }
+
+    // ── 4. Attach streak to each day goal and return ──────────────────────────
+    const enriched = todayGoals.map((dg) => ({
+      ...dg,
+      streak: streakByGoal[dg.goal_id] ?? 0,
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        week_id:     currentWeek.id,
+        day_of_week: todayDayOfWeek,
+        day_goals:   enriched,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { create, remove, update, getBadHubbitsStatus, getToday };
 

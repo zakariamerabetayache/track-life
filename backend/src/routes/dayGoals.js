@@ -7,6 +7,7 @@ const { createDayGoalSchema, updateDayGoalSchema } = require('../schemas/dayGoal
 
 router.post('/', validate(createDayGoalSchema), controller.create);
 router.get('/dashboard/bad-habits', controller.getBadHubbitsStatus);
+router.get('/today', controller.getToday);
 
 router.put('/:id', validate(updateDayGoalSchema), controller.update);
 router.delete('/:id', controller.remove);
