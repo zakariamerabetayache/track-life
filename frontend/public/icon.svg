@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F172A"/>
+      <stop offset="50%" stop-color="#0B0F19"/>
+      <stop offset="100%" stop-color="#050811"/>
+    </linearGradient>
+
+    <!-- Border Glow Gradient -->
+    <linearGradient id="borderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" stop-opacity="0.8"/>
+      <stop offset="40%" stop-color="#818CF8" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#10B981" stop-opacity="0.6"/>
+    </linearGradient>
+
+    <!-- Main Track Arc Gradient -->
+    <linearGradient id="trackGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#06B6D4"/>
+      <stop offset="50%" stop-color="#38BDF8"/>
+      <stop offset="100%" stop-color="#10B981"/>
+    </linearGradient>
+
+    <!-- Core Arrow/Pulse Gradient -->
+    <linearGradient id="coreGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#6366F1"/>
+      <stop offset="60%" stop-color="#38BDF8"/>
+      <stop offset="100%" stop-color="#22D3EE"/>
+    </linearGradient>
+
+    <!-- Inner Glow Filter -->
+    <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="12" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+
+    <!-- Subtle Dot Glow -->
+    <filter id="dotGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur1"/>
+      <feGaussianBlur in="SourceGraphic" stdDeviation="16" result="blur2"/>
+      <feMerge>
+        <feMergeNode in="blur2"/>
+        <feMergeNode in="blur1"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Squircle Base Container -->
+  <rect x="24" y="24" width="464" height="464" rx="120" ry="120" fill="url(#bgGrad)"/>
+  <rect x="24" y="24" width="464" height="464" rx="120" ry="120" fill="none" stroke="url(#borderGrad)" stroke-width="8"/>
+
+  <!-- Inner Ambient Glow Spot -->
+  <circle cx="256" cy="256" r="140" fill="#06B6D4" opacity="0.08" filter="url(#neonGlow)"/>
+
+  <!-- Outer Orbit Track Arc (Incomplete circle indicating active progress) -->
+  <path d="M 140 372 A 160 160 0 1 1 372 372"
+        fill="none"
+        stroke="url(#trackGrad)"
+        stroke-width="32"
+        stroke-linecap="round"
+        filter="url(#neonGlow)"/>
+
+  <!-- Secondary Precision Tick Ring (Dotted Track) -->
+  <circle cx="256" cy="256" r="110"
+          fill="none"
+          stroke="#334155"
+          stroke-width="6"
+          stroke-dasharray="8 16"
+          opacity="0.6"/>
+
+  <!-- Stylized "T" & "L" / Upward Arrow Trajectory -->
+  <!-- Vertical stem of "T" + "L" base curve that ascends forward -->
+  <path d="M 210 160 L 210 320 Q 210 350 240 350 L 320 350"
+        fill="none"
+        stroke="#64748B"
+        stroke-width="26"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        opacity="0.4"/>
+
+  <!-- Dynamic Ascending Momentum Chevron (Track Life Pulse) -->
+  <path d="M 190 280 L 256 210 L 330 280"
+        fill="none"
+        stroke="url(#coreGrad)"
+        stroke-width="32"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        filter="url(#neonGlow)"/>
+
+  <!-- Central Horizon Pivot / Target Crosshair Elements -->
+  <line x1="256" y1="130" x2="256" y2="175" stroke="#38BDF8" stroke-width="12" stroke-linecap="round"/>
+  
+  <!-- Glowing Target Peak Dot (The Goal / Focus Point) -->
+  <circle cx="256" cy="140" r="16" fill="#F8FAFC" filter="url(#dotGlow)"/>
+  <circle cx="256" cy="140" r="8" fill="#22D3EE"/>
+</svg>

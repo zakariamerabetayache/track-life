@@ -106,9 +106,11 @@ export default function Home() {
       <header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-              <Target className="h-5 w-5 text-white" />
-            </div>
+            <img
+              src="/icon.svg"
+              alt="Track Life Logo"
+              className="h-9 w-9 rounded-lg shrink-0 object-contain shadow-sm"
+            />
             <h1 className="text-xl font-bold tracking-tight">Track Life</h1>
           </div>
           <nav className="flex items-center gap-2">

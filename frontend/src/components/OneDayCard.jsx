@@ -161,12 +161,11 @@ export default function OneDayCard() {
       >
         {/* Logo */}
         <div className="flex items-center gap-2.5">
-          <div
-            className="h-8 w-8 rounded-full flex items-center justify-center shrink-0"
-            style={{ background: "#1e293b", border: "1px solid #334155" }}
-          >
-            <Target className="h-4 w-4" style={{ color: "#22d3ee" }} />
-          </div>
+          <img
+            src="/icon.svg"
+            alt="Track Life Logo"
+            className="h-8 w-8 rounded-lg shrink-0 object-contain shadow-sm"
+          />
           <span className="text-sm sm:text-base font-bold tracking-tight text-white">Track Life</span>
         </div>
 
