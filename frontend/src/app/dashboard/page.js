@@ -107,7 +107,7 @@ export default async function Dashboard() {
 
         {habits.length === 0 ? (
           <div className="rounded-2xl border p-12 text-center text-muted-foreground">
-            No bad habits recorded yet. Add some goals in the &quot;Bad Habbits&quot; category to get started!
+            No bad habits recorded yet. Add some goals in the &quot;Bad Habits&quot; category to get started!
           </div>
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -131,14 +131,12 @@ export default async function Dashboard() {
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
                       <div
-                        className={`rounded-xl p-3 ${
-                          isZero ? "bg-zinc-100" : "bg-orange-100"
-                        }`}
+                        className={`rounded-xl p-3 ${isZero ? "bg-zinc-100" : "bg-orange-100"
+                          }`}
                       >
                         <Flame
-                          className={`h-6 w-6 ${
-                            isZero ? "text-zinc-400" : "text-orange-600"
-                          }`}
+                          className={`h-6 w-6 ${isZero ? "text-zinc-400" : "text-orange-600"
+                            }`}
                         />
                       </div>
 
@@ -167,10 +165,9 @@ export default async function Dashboard() {
                           text-5xl
                           font-bold
                           transition
-                          ${
-                            isZero
-                              ? "bg-zinc-100 text-zinc-400"
-                              : "bg-orange-500 text-white hover:bg-orange-600"
+                          ${isZero
+                            ? "bg-zinc-100 text-zinc-400"
+                            : "bg-orange-500 text-white hover:bg-orange-600"
                           }
                         `}
                       >
@@ -217,4 +214,4 @@ export default async function Dashboard() {
       </main>
     </>
   );
-}
+}

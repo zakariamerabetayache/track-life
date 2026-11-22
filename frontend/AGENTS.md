@@ -5,4 +5,4 @@ This version has breaking changes — APIs, conventions, and file structure may 
 <!-- END:nextjs-agent-rules -->
 
 
-dont do build ever , dont run npm run dev i will do it my selef 
+dont do npm run  build ever , dont run npm run dev i will do it my selef 

@@ -68,6 +68,58 @@ async function ensureFivePrayersForToday(weekId, dayOfWeek) {
   }
 }
 
+async function setTheNewDayHabits(weekId, dayOfWeek) {
+  // 1. Remove day_goals for any habits whose master goal is inactive
+  await prisma.dayGoal.deleteMany({
+    where: {
+      week_id: weekId,
+      day_of_week: dayOfWeek,
+      goal: {
+        category: { name: { equals: 'Habits', mode: 'insensitive' } },
+        is_active: false,
+      },
+    },
+  });
+
+  // 2. Fetch all active goals in the "Habits" category
+  const activeHabits = await prisma.goal.findMany({
+    where: {
+      category: {
+        name: { equals: 'Habits', mode: 'insensitive' },
+      },
+      is_active: true,
+    },
+  });
+
+  if (activeHabits.length === 0) return;
+
+  // 3. Ensure each active habit is present in day_goals for today
+  for (const habit of activeHabits) {
+    const existing = await prisma.dayGoal.findUnique({
+      where: {
+        week_id_day_of_week_goal_id: {
+          week_id: weekId,
+          day_of_week: dayOfWeek,
+          goal_id: habit.id,
+        },
+      },
+    });
+
+    if (!existing) {
+      await prisma.dayGoal.create({
+        data: {
+          week_id: weekId,
+          day_of_week: dayOfWeek,
+          goal_id: habit.id,
+          prayer_time: null,
+          is_auto: true,
+        },
+      });
+    }
+  }
+}
+
+
 // ── Time helper utilities for sleep / wake up schedule ─────────────────────────
 function calcHoursBetween(from, to) {
   if (!from || !to) return 0;
@@ -210,14 +262,14 @@ const update = async (req, res, next) => {
 
 
 // ── GET /api/day-goals/dashboard/bad-habits ───────────────────────────────────
-// the function behind the dashbord bage in the bad habbits suction 
+// the function behind the dashbord bage in the bad habits suction 
 const getBadHubbitsStatus = async (req, res, next) => {
   try {
-    // 1. Fetch all active "Bad Habbits" goals, with every DayGoal they appear in,
+    // 1. Fetch all active "Bad Habits" goals, with every DayGoal they appear in,
     //    the DayGoal's week (for start_date), and the DayGoal's completions.
     const badHabits = await prisma.goal.findMany({
       where: {
-        category: { name: 'Bad Habbits' },
+        category: { name: 'habits' },
         is_active: true,
       },
       include: {
@@ -351,11 +403,15 @@ const getToday = async (req, res, next) => {
     // ── 2. Ensure 5 fixed prayers exist for today ─────────────────────────────
     await ensureFivePrayersForToday(currentWeek.id, todayDayOfWeek);
 
+    // 2 . part 2 set the habits in the habits component
+    await setTheNewDayHabits(currentWeek.id, todayDayOfWeek)
+
     // ── 3. Fetch today's day goals ────────────────────────────────────────────
     const todayGoals = await prisma.dayGoal.findMany({
       where: {
         week_id: currentWeek.id,
         day_of_week: todayDayOfWeek,
+        goal: { is_active: true },
       },
       include: {
         goal: { include: { category: true } },

@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { Sun, Moon, Target, Plus, X, Check, AlertCircle, RefreshCw, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { Sun, Moon, Target, Plus, X, Check, AlertCircle, RefreshCw, Trash2, Home } from "lucide-react";
 import {
   useTodayGoals,
   useToggleCompletion,
@@ -111,6 +112,8 @@ export default function OneDayCard() {
     refetch,
   } = useTodayGoals();
 
+
+
   const toggleMutation = useToggleCompletion();
   const addGoalMutation = useAddGoal();
   const deleteGoalMutation = useDeleteGoal();
@@ -159,14 +162,32 @@ export default function OneDayCard() {
         className="rounded-2xl px-4 sm:px-5 py-3 sm:py-4 flex items-center justify-between gap-3 shrink-0"
         style={{ background: "#111827", border: "1px solid #1f2937" }}
       >
-        {/* Logo */}
-        <div className="flex items-center gap-2.5">
-          <img
-            src="/icon.svg"
-            alt="Track Life Logo"
-            className="h-8 w-8 rounded-lg shrink-0 object-contain shadow-sm"
-          />
-          <span className="text-sm sm:text-base font-bold tracking-tight text-white">Track Life</span>
+        {/* Logo & Home Navigation */}
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <Link href="/" className="flex items-center gap-2.5 group transition-opacity hover:opacity-90">
+            <img
+              src="/icon.svg"
+              alt="Track Life Logo"
+              className="h-8 w-8 rounded-lg shrink-0 object-contain shadow-sm"
+            />
+            <span className="text-sm sm:text-base font-bold tracking-tight text-white group-hover:text-cyan-400 transition-colors">
+              Track Life
+            </span>
+          </Link>
+
+          <Link
+            href="/"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-medium transition-all hover:brightness-110 active:scale-95"
+            style={{
+              background: "#1e293b",
+              color: "#38bdf8",
+              border: "1px solid #334155",
+            }}
+            title="Go to Home"
+          >
+            <Home className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline font-semibold">Home</span>
+          </Link>
         </div>
 
         {/* Date */}
@@ -371,7 +392,7 @@ export default function OneDayCard() {
           {/* Habits Header with Prominent Add Habit Button */}
           <div className="flex items-center justify-between mb-3">
             <p className="text-xs sm:text-sm font-semibold text-white">Daily Habits &amp; Discipline</p>
-            <button
+            {/* <button
               onClick={() => setAddingTo(addingTo === "habits" ? null : "habits")}
               className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg transition-all hover:brightness-110 active:scale-95"
               style={{
@@ -381,7 +402,7 @@ export default function OneDayCard() {
               }}
             >
               <Plus className="h-3.5 w-3.5" /> Add habit
-            </button>
+            </button> */}
           </div>
 
           {/* Skeleton */}
