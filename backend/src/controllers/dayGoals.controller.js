@@ -68,6 +68,60 @@ async function ensureFivePrayersForToday(weekId, dayOfWeek) {
   }
 }
 
+/** Ensures that for the given week & day, the Sleep goal has a DayGoal row */
+async function ensureSleepGoalForToday(weekId, dayOfWeek) {
+  // Find or create the Sleep category
+  let sleepCategory = await prisma.category.findFirst({
+    where: { name: { equals: 'Sleep', mode: 'insensitive' } },
+  });
+  if (!sleepCategory) {
+    sleepCategory = await prisma.category.create({ data: { name: 'Sleep' } });
+  }
+
+  // Find or create the Sleep goal (master goal)
+  let sleepGoal = await prisma.goal.findFirst({
+    where: {
+      category: { name: { equals: 'Sleep', mode: 'insensitive' } },
+      is_active: true,
+    },
+  });
+  if (!sleepGoal) {
+    sleepGoal = await prisma.goal.create({
+      data: {
+        title: 'Sleep',
+        category_id: sleepCategory.id,
+        is_fixed: true,
+        times_a_day: 1,
+        sort_order: 0,
+        is_daily: true,
+      },
+    });
+  }
+
+  // Ensure a DayGoal exists for today
+  const existing = await prisma.dayGoal.findUnique({
+    where: {
+      week_id_day_of_week_goal_id: {
+        week_id: weekId,
+        day_of_week: dayOfWeek,
+        goal_id: sleepGoal.id,
+      },
+    },
+  });
+
+  if (!existing) {
+    await prisma.dayGoal.create({
+      data: {
+        week_id: weekId,
+        day_of_week: dayOfWeek,
+        goal_id: sleepGoal.id,
+        prayer_time: null,
+        is_auto: true,
+      },
+    });
+  }
+}
+
 async function setTheNewDayHabits(weekId, dayOfWeek) {
   // 1. Remove day_goals for any habits whose master goal is inactive
   await prisma.dayGoal.deleteMany({
@@ -269,7 +323,7 @@ const getBadHubbitsStatus = async (req, res, next) => {
     //    the DayGoal's week (for start_date), and the DayGoal's completions.
     const badHabits = await prisma.goal.findMany({
       where: {
-        category: { name: 'habits' },
+        category: { name: 'Habits' },
         is_active: true,
       },
       include: {
@@ -405,6 +459,9 @@ const getToday = async (req, res, next) => {
 
     // 2 . part 2 set the habits in the habits component
     await setTheNewDayHabits(currentWeek.id, todayDayOfWeek)
+
+    // 2 . part 3 ensure the Sleep DayGoal exists for today
+    await ensureSleepGoalForToday(currentWeek.id, todayDayOfWeek);
 
     // ── 3. Fetch today's day goals ────────────────────────────────────────────
     const todayGoals = await prisma.dayGoal.findMany({

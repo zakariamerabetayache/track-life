@@ -22,6 +22,12 @@ function transformDayGoals(rawDayGoals = []) {
   const prayerGoals = rawDayGoals.filter((dg) => dg.prayer_time !== null);
   const habitGoals = rawDayGoals.filter((dg) => dg.goal?.category?.name === "Habits");
 
+  // Extract the Sleep DayGoal id (category name === "Sleep")
+  const sleepDayGoal = rawDayGoals.find(
+    (dg) => dg.goal?.category?.name?.toLowerCase() === "sleep"
+  );
+  const sleepDayGoalId = sleepDayGoal?.id ?? null;
+
   // Prayer periods — fixed prayer is always first (is_auto: true)
   const prayerPeriods = PRAYER_ORDER.map((key) => {
     const meta = PRAYER_META[key];
@@ -62,7 +68,7 @@ function transformDayGoals(rawDayGoals = []) {
   }
   const progress = totalSlots > 0 ? Math.round((doneSlots / totalSlots) * 100) : 0;
 
-  return { prayerPeriods, habits, progress };
+  return { prayerPeriods, habits, progress, sleepDayGoalId };
 }
 
 
@@ -81,7 +87,7 @@ export function useTodayGoals() {
   const dayOfWeek = data?.data?.day_of_week ?? new Date().getDay();
   const sleepData = data?.data?.sleep_data ?? null;
 
-  const { prayerPeriods, habits, progress } = transformDayGoals(rawDayGoals);
+  const { prayerPeriods, habits, progress, sleepDayGoalId } = transformDayGoals(rawDayGoals);
 
   return {
     prayerPeriods,
@@ -90,6 +96,7 @@ export function useTodayGoals() {
     weekId,
     dayOfWeek,
     sleepData,
+    sleepDayGoalId,
     isLoading,
     error: error?.message ?? null,
     refetch,
@@ -137,6 +144,19 @@ export function useToggleCompletion() {
     },
 
     onSettled: () => queryClient.invalidateQueries({ queryKey: todayGoalsKey }),
+  });
+}
+
+// ── Update sleep time_from / time_to on the Sleep DayGoal ─────────────────────
+export function useUpdateSleepTime() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ dayGoalId, time_from, time_to }) =>
+      api.updateDayGoal(dayGoalId, { time_from, time_to }),
+
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: todayGoalsKey }),
+    onError: (err) => console.error("Update sleep time failed:", err.message),
   });
 }
 
@@ -189,5 +209,18 @@ export function useDeleteGoal() {
     },
 
     onSettled: () => queryClient.invalidateQueries({ queryKey: todayGoalsKey }),
+  });
+}
+
+// ── Update sleep time_from / time_to on the Sleep DayGoal ─────────────────────
+export function useUpdateSleepTime() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ dayGoalId, time_from, time_to }) =>
+      api.updateDayGoal(dayGoalId, { time_from, time_to }),
+
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: todayGoalsKey }),
+    onError: (err) => console.error("Update sleep time failed:", err.message),
   });
 }

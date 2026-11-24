@@ -2,18 +2,128 @@
 
 import React, { useState, useMemo } from "react";
 import Link from "next/link";
-import { Sun, Moon, Target, Plus, X, Check, AlertCircle, RefreshCw, Trash2, Home } from "lucide-react";
+import { Sun, Moon, Target, Plus, X, Check, AlertCircle, RefreshCw, Trash2, ArrowLeft, Pencil } from "lucide-react";
 import {
   useTodayGoals,
   useToggleCompletion,
   useAddGoal,
   useDeleteGoal,
+  useUpdateSleepTime,
 } from "@/features/weekDashBoard/hooks/use-today-goals";
 
-// ── Fallback anchors (until sleep goal is set up with time_from / time_to) ────
-const DEFAULT_WAKE = "05:15 AM";
-const DEFAULT_SLEEP = "10:30 PM";
-const DEFAULT_GOAL = "7h 15m";
+// ── Sleep / Wake time input component ────────────────────────────────────────
+function SleepAnchor({ sleepData, sleepDayGoalId, updateSleepMutation }) {
+  const [editing, setEditing] = useState(!sleepData);
+  const [wakeVal, setWakeVal] = useState("");
+  const [bedVal, setBedVal] = useState("");
+
+  const handleSave = () => {
+    if (!wakeVal || !bedVal || !sleepDayGoalId) return;
+    updateSleepMutation.mutate(
+      { dayGoalId: sleepDayGoalId, time_from: bedVal, time_to: wakeVal },
+      { onSuccess: () => setEditing(false) }
+    );
+  };
+
+  if (!editing && sleepData) {
+    return (
+      <div className="flex flex-wrap gap-2 sm:gap-3 items-center">
+        {/* Wake Up pill */}
+        <div
+          className="flex items-center gap-2 sm:gap-3 rounded-full px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm"
+          style={{ background: "#1c1200", border: "1px solid #854d0e" }}
+        >
+          <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-full flex items-center justify-center shrink-0" style={{ background: "#451a03" }}>
+            <Sun className="h-3 sm:h-3.5 w-3 sm:w-3.5" style={{ color: "#fbbf24" }} />
+          </div>
+          <span style={{ color: "#94a3b8" }}>Wake Up:</span>
+          <span className="font-bold text-white">{sleepData.wake_up}</span>
+        </div>
+
+        {/* Sleep Target pill */}
+        <div
+          className="flex items-center gap-2 sm:gap-3 rounded-full px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm flex-wrap"
+          style={{ background: "#0d0b1f", border: "1px solid #3730a3" }}
+        >
+          <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-full flex items-center justify-center shrink-0" style={{ background: "#1e1b4b" }}>
+            <Moon className="h-3 sm:h-3.5 w-3 sm:w-3.5" style={{ color: "#818cf8" }} />
+          </div>
+          <span style={{ color: "#94a3b8" }}>Bedtime:</span>
+          <span className="font-bold text-white">{sleepData.sleep_target}</span>
+          <div style={{ width: 1, height: 14, background: "#3730a3", margin: "0 2px" }} />
+          <span style={{ color: "#94a3b8" }}>Goal:</span>
+          <span className="font-semibold text-white">{sleepData.goal_duration}</span>
+        </div>
+
+        {/* Edit button */}
+        <button
+          onClick={() => { setWakeVal(""); setBedVal(""); setEditing(true); }}
+          className="h-7 w-7 rounded-full flex items-center justify-center transition-opacity hover:opacity-90"
+          style={{ background: "#1e293b", border: "1px solid #334155" }}
+          title="Edit sleep times"
+        >
+          <Pencil className="h-3 w-3" style={{ color: "#94a3b8" }} />
+        </button>
+      </div>
+    );
+  }
+
+  // Input mode
+  return (
+    <div className="flex flex-wrap gap-2 items-center">
+      <div
+        className="flex items-center gap-2 rounded-full px-3 py-1.5 text-xs"
+        style={{ background: "#1c1200", border: "1px solid #854d0e" }}
+      >
+        <Sun className="h-3 w-3 shrink-0" style={{ color: "#fbbf24" }} />
+        <span style={{ color: "#94a3b8" }}>Wake Up:</span>
+        <input
+          type="time"
+          value={wakeVal}
+          onChange={(e) => setWakeVal(e.target.value)}
+          className="rounded outline-none text-xs px-1"
+          style={{ background: "transparent", color: "#f1f5f9", border: "none", width: 90 }}
+        />
+      </div>
+
+      <div
+        className="flex items-center gap-2 rounded-full px-3 py-1.5 text-xs"
+        style={{ background: "#0d0b1f", border: "1px solid #3730a3" }}
+      >
+        <Moon className="h-3 w-3 shrink-0" style={{ color: "#818cf8" }} />
+        <span style={{ color: "#94a3b8" }}>Bedtime:</span>
+        <input
+          type="time"
+          value={bedVal}
+          onChange={(e) => setBedVal(e.target.value)}
+          className="rounded outline-none text-xs px-1"
+          style={{ background: "transparent", color: "#f1f5f9", border: "none", width: 90 }}
+        />
+      </div>
+
+      <button
+        onClick={handleSave}
+        disabled={!wakeVal || !bedVal || updateSleepMutation.isPending}
+        className="h-7 px-3 rounded-full flex items-center gap-1 text-xs font-semibold transition-opacity disabled:opacity-50"
+        style={{ background: "#0891b2", color: "#fff" }}
+      >
+        <Check className="h-3 w-3" strokeWidth={3} />
+        {updateSleepMutation.isPending ? "Saving…" : "Save"}
+      </button>
+
+      {sleepData && (
+        <button
+          onClick={() => setEditing(false)}
+          className="h-7 w-7 rounded-full flex items-center justify-center hover:bg-slate-700"
+          style={{ background: "#1e293b" }}
+          title="Cancel"
+        >
+          <X className="h-3 w-3" style={{ color: "#94a3b8" }} />
+        </button>
+      )}
+    </div>
+  );
+}
 
 // ── Loading skeleton for a prayer card ────────────────────────────────────────
 function PeriodSkeleton() {
@@ -107,17 +217,16 @@ export default function OneDayCard() {
     weekId,
     dayOfWeek,
     sleepData,
+    sleepDayGoalId,
     isLoading,
     error,
     refetch,
   } = useTodayGoals();
 
-
-
   const toggleMutation = useToggleCompletion();
   const addGoalMutation = useAddGoal();
   const deleteGoalMutation = useDeleteGoal();
-
+  const updateSleepMutation = useUpdateSleepTime();
   // Which section is showing the add input: "fajr"|"dhuhr"|...|"habits"|null
   const [addingTo, setAddingTo] = useState(null);
 
@@ -146,11 +255,6 @@ export default function OneDayCard() {
     deleteGoalMutation.mutate(dayGoalId);
   };
 
-  // Anchors — from API sleep_data if available, else defaults
-  const wakeUp = sleepData?.wake_up ?? DEFAULT_WAKE;
-  const sleepTarget = sleepData?.sleep_target ?? DEFAULT_SLEEP;
-  const sleepGoal = sleepData?.goal_duration ?? DEFAULT_GOAL;
-
   return (
     <div
       className="min-h-screen lg:h-screen w-full overflow-y-auto lg:overflow-hidden flex flex-col p-3 sm:p-5 gap-3 sm:gap-4"
@@ -162,36 +266,29 @@ export default function OneDayCard() {
         className="rounded-2xl px-4 sm:px-5 py-3 sm:py-4 flex items-center justify-between gap-3 shrink-0"
         style={{ background: "#111827", border: "1px solid #1f2937" }}
       >
-        {/* Logo & Home Navigation */}
-        <div className="flex items-center gap-2.5 sm:gap-3">
-          <Link href="/" className="flex items-center gap-2.5 group transition-opacity hover:opacity-90">
-            <img
-              src="/icon.svg"
-              alt="Track Life Logo"
-              className="h-8 w-8 rounded-lg shrink-0 object-contain shadow-sm"
-            />
-            <span className="text-sm sm:text-base font-bold tracking-tight text-white group-hover:text-cyan-400 transition-colors">
-              Track Life
-            </span>
-          </Link>
+        {/* Far-left back arrow → home */}
+        <Link
+          href="/"
+          className="shrink-0 flex items-center justify-center rounded-xl p-1.5 transition-colors hover:bg-slate-800"
+          title="Go Home"
+        >
+          <ArrowLeft className="h-5 w-5" style={{ color: "#64748b" }} />
+        </Link>
 
-          <Link
-            href="/"
-            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-medium transition-all hover:brightness-110 active:scale-95"
-            style={{
-              background: "#1e293b",
-              color: "#38bdf8",
-              border: "1px solid #334155",
-            }}
-            title="Go to Home"
-          >
-            <Home className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline font-semibold">Home</span>
-          </Link>
+        {/* Logo & title */}
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <img
+            src="/icon.svg"
+            alt="Track Life Logo"
+            className="h-8 w-8 rounded-lg shrink-0 object-contain shadow-sm"
+          />
+          <span className="text-sm sm:text-base font-bold tracking-tight text-white">
+            Track Life
+          </span>
         </div>
 
-        {/* Date */}
-        <span className="text-xs sm:text-base font-medium text-center" style={{ color: "#cbd5e1" }}>
+        {/* Date — centred in remaining space */}
+        <span className="text-xs sm:text-base font-medium text-center flex-1" style={{ color: "#cbd5e1" }}>
           {today}
         </span>
 
@@ -225,36 +322,11 @@ export default function OneDayCard() {
         <p className="text-[11px] sm:text-xs font-semibold uppercase mb-2" style={{ color: "#475569", letterSpacing: "0.1em" }}>
           Quick Anchors
         </p>
-        <div className="flex flex-wrap gap-2 sm:gap-3">
-
-          {/* Wake Up */}
-          <div
-            className="flex items-center gap-2 sm:gap-3 rounded-full px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm"
-            style={{ background: "#1c1200", border: "1px solid #854d0e" }}
-          >
-            <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-full flex items-center justify-center shrink-0" style={{ background: "#451a03" }}>
-              <Sun className="h-3 sm:h-3.5 w-3 sm:w-3.5" style={{ color: "#fbbf24" }} />
-            </div>
-            <span style={{ color: "#94a3b8" }}>Wake Up:</span>
-            <span className="font-bold text-white">{wakeUp}</span>
-          </div>
-
-          {/* Sleep Target */}
-          <div
-            className="flex items-center gap-2 sm:gap-3 rounded-full px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm flex-wrap"
-            style={{ background: "#0d0b1f", border: "1px solid #3730a3" }}
-          >
-            <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-full flex items-center justify-center shrink-0" style={{ background: "#1e1b4b" }}>
-              <Moon className="h-3 sm:h-3.5 w-3 sm:w-3.5" style={{ color: "#818cf8" }} />
-            </div>
-            <span style={{ color: "#94a3b8" }}>Sleep Target:</span>
-            <span className="font-bold text-white">{sleepTarget}</span>
-            <div style={{ width: 1, height: 14, background: "#3730a3", margin: "0 2px" }} />
-            <span style={{ color: "#94a3b8" }}>Goal:</span>
-            <span className="font-semibold text-white">{sleepGoal}</span>
-          </div>
-
-        </div>
+        <SleepAnchor
+          sleepData={sleepData}
+          sleepDayGoalId={sleepDayGoalId}
+          updateSleepMutation={updateSleepMutation}
+        />
       </div>
 
       {/* ══ DAILY FLOW (5 PRAYER CARDS) ═════════════════════════════════════ */}
