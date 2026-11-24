@@ -147,19 +147,6 @@ export function useToggleCompletion() {
   });
 }
 
-// ── Update sleep time_from / time_to on the Sleep DayGoal ─────────────────────
-export function useUpdateSleepTime() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ dayGoalId, time_from, time_to }) =>
-      api.updateDayGoal(dayGoalId, { time_from, time_to }),
-
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: todayGoalsKey }),
-    onError: (err) => console.error("Update sleep time failed:", err.message),
-  });
-}
-
 // ── Add a goal to a prayer period or habit section ────────────────────────────
 // prayerTime: "fajr" | "dhuhr" | "asr" | "maghrib" | "isha" | null (habit)
 export function useAddGoal() {
