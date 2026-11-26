@@ -17,9 +17,11 @@ import { toast } from "sonner";
 
 // ── Sleep / Wake time input component ────────────────────────────────────────
 function SleepAnchor({ sleepData, weekId, dayOfWeek, upsertMutation }) {
-  const [editing, setEditing] = useState(!sleepData);
+  const [editing, setEditing] = useState(false);
   const [wakeVal, setWakeVal] = useState("");
   const [bedVal, setBedVal] = useState("");
+
+  const isEditing = editing || !sleepData;
 
   const handleSave = () => {
     if (!wakeVal || !bedVal || !weekId) return;
@@ -29,7 +31,7 @@ function SleepAnchor({ sleepData, weekId, dayOfWeek, upsertMutation }) {
     );
   };
 
-  if (!editing && sleepData) {
+  if (!isEditing && sleepData) {
     return (
       <div className="flex flex-wrap gap-2 sm:gap-3 items-center">
         {/* Wake Up pill */}
@@ -168,30 +170,19 @@ function ScorePicker({ label, icon: Icon, color, value, onChange }) {
   );
 }
 
-function DailyCheckIn({ weekId, dayOfWeek }) {
-  const { insight, sleep_data: insightSleep, isLoading } = useTodayInsight();
+function DailyCheckInForm({ insight, insightSleep, weekId, dayOfWeek, savedAt, onSaved }) {
   const upsertMutation = useUpsertInsight();
 
-  const [scores, setScores] = useState({ energy: null, focus: null, satisfaction: null });
-  const [workHours, setWorkHours] = useState("");
-  const [evaluation, setEvaluation] = useState("");
-  const [lesson, setLesson] = useState("");
-  const [savedAt, setSavedAt] = useState(null);
-  const [initialized, setInitialized] = useState(false);
-
-  React.useEffect(() => {
-    if (insight && !initialized) {
-      setScores({
-        energy: insight.energy ?? null,
-        focus: insight.focus ?? null,
-        satisfaction: insight.satisfaction ?? null,
-      });
-      setWorkHours(insight.work_hours != null ? String(insight.work_hours) : "");
-      setEvaluation(insight.evaluation ?? "");
-      setLesson(insight.lesson ?? "");
-      setInitialized(true);
-    }
-  }, [insight, initialized]);
+  const [scores, setScores] = useState(() => ({
+    energy: insight?.energy ?? null,
+    focus: insight?.focus ?? null,
+    satisfaction: insight?.satisfaction ?? null,
+  }));
+  const [workHours, setWorkHours] = useState(() =>
+    insight?.work_hours != null ? String(insight.work_hours) : ""
+  );
+  const [evaluation, setEvaluation] = useState(() => insight?.evaluation ?? "");
+  const [lesson, setLesson] = useState(() => insight?.lesson ?? "");
 
   const handleSave = useCallback(() => {
     if (!weekId) return;
@@ -204,19 +195,13 @@ function DailyCheckIn({ weekId, dayOfWeek }) {
       lesson: lesson || null,
     };
     upsertMutation.mutate(payload, {
-      onSuccess: () => setSavedAt(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })),
+      onSuccess: () => onSaved(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })),
     });
-  }, [weekId, dayOfWeek, scores, workHours, evaluation, lesson, upsertMutation]);
+  }, [weekId, dayOfWeek, scores, workHours, evaluation, lesson, upsertMutation, onSaved]);
 
   const onKeyDown = useCallback((e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") handleSave();
   }, [handleSave]);
-
-  if (isLoading) {
-    return (
-      <div className="rounded-2xl animate-pulse" style={{ background: "#111827", border: "1px solid #1f2937", height: 180 }} />
-    );
-  }
 
   return (
     <div
@@ -326,6 +311,29 @@ function DailyCheckIn({ weekId, dayOfWeek }) {
   );
 }
 
+function DailyCheckIn({ weekId, dayOfWeek }) {
+  const { insight, sleep_data: insightSleep, isLoading } = useTodayInsight();
+  const [savedAt, setSavedAt] = useState(null);
+
+  if (isLoading) {
+    return (
+      <div className="rounded-2xl animate-pulse" style={{ background: "#111827", border: "1px solid #1f2937", height: 180 }} />
+    );
+  }
+
+  return (
+    <DailyCheckInForm
+      key={insight?.id ?? "empty"}
+      insight={insight}
+      insightSleep={insightSleep}
+      weekId={weekId}
+      dayOfWeek={dayOfWeek}
+      savedAt={savedAt}
+      onSaved={setSavedAt}
+    />
+  );
+}
+
 // ── Loading skeleton for a prayer card ────────────────────────────────────────
 function PeriodSkeleton() {
   return (
@@ -418,7 +426,6 @@ export default function OneDayCard() {
     weekId,
     dayOfWeek,
     sleepData,
-    sleepDayGoalId,
     isLoading,
     error,
     refetch,

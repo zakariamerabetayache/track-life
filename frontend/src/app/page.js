@@ -187,7 +187,7 @@ export default function Home() {
 
             <WeekProgress progress={getOverallProgress()} />
 
-            <TimeTrackingDashboard dayGoals={week.day_goals} />
+            <TimeTrackingDashboard dayGoals={week.day_goals} dailyInsights={week.daily_insights} />
 
             <div className="grid gap-4">
               {[0, 1, 2, 3, 4, 5, 6].map((dayIndex) => (
@@ -196,6 +196,7 @@ export default function Home() {
                   dayName={DAY_NAMES[dayIndex]}
                   dayIndex={dayIndex}
                   dayGoals={getDayGoals(dayIndex)}
+                  dailyInsight={week.daily_insights?.find((ins) => ins.day_of_week === dayIndex) ?? null}
                   weekId={week.id}
                   isToday={dayIndex === todayIndex}
                   onRefresh={refreshWeek}

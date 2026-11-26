@@ -478,42 +478,61 @@ const getToday = async (req, res, next) => {
       ],
     });
 
-    // ── 4. Find sleep / wake up schedule ──────────────────────────────────────
-    const keywords = ['sleep', 'نوم', 'النوم'];
-    let sleepGoalMatch = todayGoals.find((dg) =>
-      keywords.some((kw) => {
-        const title = (dg.goal?.title ?? '').toLowerCase();
-        const cat = (dg.goal?.category?.name ?? '').toLowerCase();
-        return title.includes(kw.toLowerCase()) || cat.includes(kw.toLowerCase());
-      }) && dg.time_from && dg.time_to
-    );
-
-    if (!sleepGoalMatch) {
-      sleepGoalMatch = await prisma.dayGoal.findFirst({
-        where: {
+    // ── 4. Find sleep / wake up schedule (prefer daily_insights, fallback to DayGoal) ──
+    const todayInsight = await prisma.dailyInsight.findUnique({
+      where: {
+        week_id_day_of_week: {
           week_id: currentWeek.id,
-          time_from: { not: null },
-          time_to: { not: null },
-          goal: {
-            OR: [
-              { title: { contains: 'sleep', mode: 'insensitive' } },
-              { title: { contains: 'نوم' } },
-              { category: { name: { contains: 'sleep', mode: 'insensitive' } } },
-              { category: { name: { contains: 'نوم' } } },
-            ],
-          },
+          day_of_week: todayDayOfWeek,
         },
-      });
-    }
+      },
+      select: { sleep_time: true, wake_up_time: true },
+    });
 
     let sleepData = null;
-    if (sleepGoalMatch?.time_from && sleepGoalMatch?.time_to) {
-      const hours = calcHoursBetween(sleepGoalMatch.time_from, sleepGoalMatch.time_to);
+    if (todayInsight?.sleep_time && todayInsight?.wake_up_time) {
+      const hours = calcHoursBetween(todayInsight.sleep_time, todayInsight.wake_up_time);
       sleepData = {
-        wake_up: timeStrTo12h(sleepGoalMatch.time_to),
-        sleep_target: timeStrTo12h(sleepGoalMatch.time_from),
+        wake_up: timeStrTo12h(todayInsight.wake_up_time),
+        sleep_target: timeStrTo12h(todayInsight.sleep_time),
         goal_duration: formatHoursAndMins(hours),
       };
+    } else {
+      const keywords = ['sleep', 'نوم', 'النوم'];
+      let sleepGoalMatch = todayGoals.find((dg) =>
+        keywords.some((kw) => {
+          const title = (dg.goal?.title ?? '').toLowerCase();
+          const cat = (dg.goal?.category?.name ?? '').toLowerCase();
+          return title.includes(kw.toLowerCase()) || cat.includes(kw.toLowerCase());
+        }) && dg.time_from && dg.time_to
+      );
+
+      if (!sleepGoalMatch) {
+        sleepGoalMatch = await prisma.dayGoal.findFirst({
+          where: {
+            week_id: currentWeek.id,
+            time_from: { not: null },
+            time_to: { not: null },
+            goal: {
+              OR: [
+                { title: { contains: 'sleep', mode: 'insensitive' } },
+                { title: { contains: 'نوم' } },
+                { category: { name: { contains: 'sleep', mode: 'insensitive' } } },
+                { category: { name: { contains: 'نوم' } } },
+              ],
+            },
+          },
+        });
+      }
+
+      if (sleepGoalMatch?.time_from && sleepGoalMatch?.time_to) {
+        const hours = calcHoursBetween(sleepGoalMatch.time_from, sleepGoalMatch.time_to);
+        sleepData = {
+          wake_up: timeStrTo12h(sleepGoalMatch.time_to),
+          sleep_target: timeStrTo12h(sleepGoalMatch.time_from),
+          goal_duration: formatHoursAndMins(hours),
+        };
+      }
     }
 
     // ── 5. Compute streak for each unique goal ────────────────────────────────

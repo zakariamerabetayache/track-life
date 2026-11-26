@@ -240,32 +240,43 @@ function TrackingChart({
 }
 
 /* ─── Sleep & Wake Times Schedule Chart Panel ──────────────────────────── */
-function SleepScheduleChart({ dayGoals }) {
+function SleepScheduleChart({ dayGoals, dailyInsights }) {
   const safeDayGoals = dayGoals || [];
+  const safeInsights = dailyInsights || [];
   const keywords = ["نوم", "sleep", "النوم"];
 
   const scheduleData = DAY_LABELS.map((day, dayIndex) => {
-    const match = safeDayGoals.find(
-      (dg) =>
-        dg.day_of_week === dayIndex &&
-        keywords.some((kw) => {
-          const title = (dg.goal?.title ?? "").toLowerCase();
-          const cat = (dg.goal?.category?.name ?? "").toLowerCase();
-          return title.includes(kw.toLowerCase()) || cat.includes(kw.toLowerCase());
-        }) &&
-        dg.time_from &&
-        dg.time_to
-    );
+    const insight = safeInsights.find((ins) => ins.day_of_week === dayIndex);
+    let sleepFrom = insight?.sleep_time || null;
+    let wakeTo = insight?.wake_up_time || null;
 
-    const bedMins = match ? timeToMins(match.time_from, true) : null;
-    const wakeMins = match ? timeToMins(match.time_to, false) : null;
+    if (!sleepFrom || !wakeTo) {
+      const match = safeDayGoals.find(
+        (dg) =>
+          dg.day_of_week === dayIndex &&
+          keywords.some((kw) => {
+            const title = (dg.goal?.title ?? "").toLowerCase();
+            const cat = (dg.goal?.category?.name ?? "").toLowerCase();
+            return title.includes(kw.toLowerCase()) || cat.includes(kw.toLowerCase());
+          }) &&
+          dg.time_from &&
+          dg.time_to
+      );
+      if (match) {
+        sleepFrom = match.time_from;
+        wakeTo = match.time_to;
+      }
+    }
+
+    const bedMins = sleepFrom ? timeToMins(sleepFrom, true) : null;
+    const wakeMins = wakeTo ? timeToMins(wakeTo, false) : null;
 
     return {
       day,
       bedMins,
       wakeMins,
-      bedtimeStr: match ? minsToTimeStr(timeToMins(match.time_from, false)) : null,
-      wakeStr: match ? minsToTimeStr(wakeMins) : null,
+      bedtimeStr: sleepFrom ? minsToTimeStr(timeToMins(sleepFrom, false)) : null,
+      wakeStr: wakeTo ? minsToTimeStr(wakeMins) : null,
       // For charting: bedtime as decimal hours (e.g. 23.5 for 11:30 PM), wake as decimal hours (e.g. 7.5)
       bedHour: bedMins !== null ? Math.round(((bedMins % (24 * 60)) / 60) * 10) / 10 : null,
       wakeHour: wakeMins !== null ? Math.round((wakeMins / 60) * 10) / 10 : null,
@@ -365,7 +376,7 @@ function SleepScheduleChart({ dayGoals }) {
 
         {validBeds.length === 0 && (
           <p className="text-xs text-muted-foreground text-center mt-2 italic">
-            Enter start & end times on sleep goals to see bedtime & wake up trends.
+            Log sleep &amp; wake times in One Day Dashboard to see bedtime &amp; wake up trends.
           </p>
         )}
       </div>
@@ -374,10 +385,11 @@ function SleepScheduleChart({ dayGoals }) {
 }
 
 /* ─── Main Export ────────────────────────────────────────────────────────── */
-export default function TimeTrackingDashboard({ dayGoals }) {
+export default function TimeTrackingDashboard({ dayGoals, dailyInsights }) {
   const safeDayGoals = dayGoals || [];
+  const safeInsights = dailyInsights || [];
 
-  function buildChartData(keywords) {
+  function buildGoalHoursByDay(keywords) {
     return DAY_LABELS.map((day, dayIndex) => {
       const matches = safeDayGoals.filter(
         (dg) =>
@@ -386,16 +398,13 @@ export default function TimeTrackingDashboard({ dayGoals }) {
             const title = (dg.goal?.title ?? "").toLowerCase();
             const cat = (dg.goal?.category?.name ?? "").toLowerCase();
             if (keywords.includes("work")) {
-  const noCategory = cat === "";
-
-  return (
-    title.includes(kw.toLowerCase()) ||
-    (noCategory && !title.includes("sleep") && !title.includes("نوم") && !title.includes("النوم"))
-  );
-}
-            else{
-            return title.includes(kw.toLowerCase()) || cat.includes(kw.toLowerCase());
+              const noCategory = cat === "";
+              return (
+                title.includes(kw.toLowerCase()) ||
+                (noCategory && !title.includes("sleep") && !title.includes("نوم") && !title.includes("النوم"))
+              );
             }
+            return title.includes(kw.toLowerCase()) || cat.includes(kw.toLowerCase());
           }) &&
           dg.time_from &&
           dg.time_to
@@ -413,8 +422,23 @@ export default function TimeTrackingDashboard({ dayGoals }) {
     });
   }
 
-  const sleepData = buildChartData(["نوم", "sleep", "النوم"]);
-  const workData = buildChartData(["work", "عمل", "job"]);
+  const fallbackSleep = buildGoalHoursByDay(["نوم", "sleep", "النوم"]);
+  const sleepData = DAY_LABELS.map((day, dayIndex) => {
+    const ins = safeInsights.find((i) => i.day_of_week === dayIndex);
+    if (ins?.sleep_time && ins?.wake_up_time) {
+      return { day, hours: calcHours(ins.sleep_time, ins.wake_up_time) };
+    }
+    return fallbackSleep[dayIndex];
+  });
+
+  const fallbackWork = buildGoalHoursByDay(["work", "عمل", "job"]);
+  const workData = DAY_LABELS.map((day, dayIndex) => {
+    const ins = safeInsights.find((i) => i.day_of_week === dayIndex);
+    if (ins?.work_hours != null) {
+      return { day, hours: Math.round(ins.work_hours * 100) / 100 };
+    }
+    return fallbackWork[dayIndex];
+  });
 
   return (
     <section className="space-y-4 my-4">
@@ -438,7 +462,7 @@ export default function TimeTrackingDashboard({ dayGoals }) {
           warnColor="#f59e0b"
           badColor="#f43f5e"
           accentColor="#818cf8"
-          emptyMessage="Enter start & end times on sleep goals below to track hours."
+          emptyMessage="Log sleep & wake times in One Day Dashboard to track hours."
         />
 
         {/* Work Duration Bar Chart */}
@@ -452,11 +476,11 @@ export default function TimeTrackingDashboard({ dayGoals }) {
           warnColor="#f59e0b"
           badColor="#f43f5e"
           accentColor="#34d399"
-          emptyMessage="Enter start & end times on work goals below to track hours."
+          emptyMessage="Log work hours in Daily Check-In (or timed work goals) to track hours."
         />
 
         {/* NEW: Bedtime & Wake Up Times Schedule Chart with Averages */}
-        <SleepScheduleChart dayGoals={safeDayGoals} />
+        <SleepScheduleChart dayGoals={safeDayGoals} dailyInsights={safeInsights} />
       </div>
     </section>
   );

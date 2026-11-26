@@ -47,6 +47,7 @@ export function useUpsertInsight() {
         };
       });
       queryClient.invalidateQueries({ queryKey: dailyInsightsKey });
+      queryClient.invalidateQueries({ queryKey: ["today-goals"] });
     },
 
     onError: (err) => {
@@ -58,7 +59,7 @@ export function useUpsertInsight() {
 // ── Paginated list (for /daily_insights page) ─────────────────────────────────
 export function useDailyInsights(params = {}) {
   return useQuery({
-    queryKey: [dailyInsightsKey, params],
+    queryKey: [...dailyInsightsKey, params],
     queryFn:  () => api.getDailyInsights(params),
     staleTime: 30_000,
   });

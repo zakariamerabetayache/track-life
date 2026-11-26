@@ -126,12 +126,15 @@ function SummaryStrip({ insights }) {
     return vals.length ? (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1) : "—";
   };
 
+  const avgWorkVal = avg("work_hours");
+  const avgSleepVal = avgSleep();
+
   const stats = [
     { label: "Avg Energy",       value: avg("energy"),       color: "#f59e0b" },
     { label: "Avg Focus",        value: avg("focus"),        color: "#22d3ee" },
     { label: "Avg Satisfaction", value: avg("satisfaction"), color: "#a78bfa" },
-    { label: "Avg Work",         value: `${avg("work_hours")}h`,  color: "#34d399" },
-    { label: "Avg Sleep",        value: `${avgSleep()}h`,    color: "#818cf8" },
+    { label: "Avg Work",         value: avgWorkVal === "—" ? "—" : `${avgWorkVal}h`,   color: "#34d399" },
+    { label: "Avg Sleep",        value: avgSleepVal === "—" ? "—" : `${avgSleepVal}h`, color: "#818cf8" },
   ];
 
   return (

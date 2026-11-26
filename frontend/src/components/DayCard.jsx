@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import GoalItem from "@/components/GoalItem";
 import AddGoalDialog from "@/components/AddGoalDialog";
 import { Button } from "@/components/ui/button";
-import { Plus, ChevronDown, ChevronUp, Sunrise, Sun, Sunset, Moon, Star, Target, CheckCircle2 } from "lucide-react";
+import { Plus, ChevronDown, ChevronUp, Sunrise, Sun, Sunset, Moon, Star, Target, CheckCircle2, Zap, Eye, Smile, Briefcase } from "lucide-react";
 
 const getPrayerStyle = (prayer) => {
   switch (prayer?.toLowerCase()) {
@@ -18,7 +18,7 @@ const getPrayerStyle = (prayer) => {
   }
 };
 
-export default function DayCard({ dayName, dayIndex, dayGoals, weekId, isToday, onRefresh }) {
+export default function DayCard({ dayName, dayIndex, dayGoals, dailyInsight, weekId, isToday, onRefresh }) {
   const [isExpanded, setIsExpanded] = useState(isToday);
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -98,6 +98,36 @@ export default function DayCard({ dayName, dayIndex, dayGoals, weekId, isToday, 
       {/* Expanded Content */}
       {isExpanded && (
         <div className="px-4 pb-4 space-y-3">
+          {dailyInsight && (dailyInsight.sleep_time || dailyInsight.work_hours != null || dailyInsight.energy != null || dailyInsight.focus != null || dailyInsight.satisfaction != null) && (
+            <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border/40 bg-muted/30 px-3 py-2 text-xs">
+              {dailyInsight.sleep_time && dailyInsight.wake_up_time && (
+                <span className="inline-flex items-center gap-1 text-indigo-400 font-medium">
+                  <Moon className="h-3 w-3" /> {dailyInsight.sleep_time} → {dailyInsight.wake_up_time}
+                </span>
+              )}
+              {dailyInsight.work_hours != null && (
+                <span className="inline-flex items-center gap-1 text-emerald-400 font-medium">
+                  <Briefcase className="h-3 w-3" /> {dailyInsight.work_hours}h work
+                </span>
+              )}
+              {dailyInsight.energy != null && (
+                <span className="inline-flex items-center gap-1 text-amber-400 font-medium">
+                  <Zap className="h-3 w-3" /> Energy {dailyInsight.energy}/10
+                </span>
+              )}
+              {dailyInsight.focus != null && (
+                <span className="inline-flex items-center gap-1 text-cyan-400 font-medium">
+                  <Eye className="h-3 w-3" /> Focus {dailyInsight.focus}/10
+                </span>
+              )}
+              {dailyInsight.satisfaction != null && (
+                <span className="inline-flex items-center gap-1 text-violet-400 font-medium">
+                  <Smile className="h-3 w-3" /> Satisfaction {dailyInsight.satisfaction}/10
+                </span>
+              )}
+            </div>
+          )}
+
           {dayGoals.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">
               No goals for this day yet.
