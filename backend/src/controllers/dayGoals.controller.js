@@ -460,9 +460,6 @@ const getToday = async (req, res, next) => {
     // 2 . part 2 set the habits in the habits component
     await setTheNewDayHabits(currentWeek.id, todayDayOfWeek)
 
-    // 2 . part 3 ensure the Sleep DayGoal exists for today
-    await ensureSleepGoalForToday(currentWeek.id, todayDayOfWeek);
-
     // ── 3. Fetch today's day goals ────────────────────────────────────────────
     const todayGoals = await prisma.dayGoal.findMany({
       where: {

@@ -39,6 +39,7 @@ app.use('/api/day-goals', require('./routes/dayGoals'));
 app.use('/api/completions', require('./routes/completions'));
 app.use('/api/week-goals', require('./routes/weekGoals'));
 app.use('/api/reminders', require('./routes/reminders'));
+app.use('/api/daily-insights', require('./routes/dailyInsights'));
 
 // Health check
 app.get('/api/health', (_req, res) => {

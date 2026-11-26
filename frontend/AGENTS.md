@@ -6,3 +6,5 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 
 dont do npm run  build ever , dont run npm run dev i will do it my selef 
+
+never make the plan in the conversation , do it in a tab .md like usaual 

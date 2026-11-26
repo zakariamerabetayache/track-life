@@ -43,8 +43,9 @@ model Week {
   end_date    DateTime    @db.Date
   created_at  DateTime    @default(now())
   updated_at  DateTime    @updatedAt
-  day_goals   DayGoal[]
-  week_goals  Week_Goal[]
+  day_goals      DayGoal[]
+  week_goals     Week_Goal[]
+  daily_insights DailyInsight[]
 
   @@unique([year, week_number])
   @@map("weeks")
@@ -101,4 +102,41 @@ model Reminders {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
   @@map("reminders")
+}
+
+model DailyInsight {
+  id           Int      @id @default(autoincrement())
+  week_id      Int
+  day_of_week  Int      // 0 = Sunday … 6 = Saturday
+  insight_date DateTime @db.Date
+
+  // Sleep (replaces Sleep DayGoal)
+  sleep_time   String?  @db.VarChar(8)  // "HH:MM" bedtime
+  wake_up_time String?  @db.VarChar(8)  // "HH:MM" wake-up time
+
+  // Scores 1–10
+  energy       Int?
+  focus        Int?
+  satisfaction Int?
+
+  // Work hours (self-reported)
+  work_hours   Float?
+
+  // Goal completion snapshot (computed at save-time)
+  goals_total    Int?
+  goals_achieved Int?
+  goals_pct      Float?
+
+  // Reflections
+  evaluation String? @db.Text
+  lesson     String? @db.Text
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  week Week @relation(fields: [week_id], references: [id], onDelete: Cascade)
+
+  @@unique([week_id, day_of_week])
+  @@index([insight_date(sort: Desc)])
+  @@map("daily_insights")
 }

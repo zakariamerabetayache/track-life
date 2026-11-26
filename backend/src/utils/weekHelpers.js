@@ -15,6 +15,9 @@ const WEEK_WITH_GOALS = {
       completions: true,
     },
   },
+  daily_insights: {
+    orderBy: { day_of_week: 'asc' },
+  },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

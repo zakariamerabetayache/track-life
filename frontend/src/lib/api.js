@@ -95,4 +95,14 @@ export const api = {
   // Completions
   toggleCompletion: (data) =>
     fetchAPI('/completions/toggle', { method: 'POST', body: JSON.stringify(data) }),
+
+  // Daily Insights
+  getTodayInsight: () => fetchAPI('/daily-insights/today'),
+  upsertDailyInsight: (data) =>
+    fetchAPI('/daily-insights', { method: 'PUT', body: JSON.stringify(data) }),
+  getDailyInsights: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return fetchAPI(`/daily-insights${query ? '?' + query : ''}`);
+  },
+  deleteDailyInsight: (id) => fetchAPI(`/daily-insights/${id}`, { method: 'DELETE' }),
 };

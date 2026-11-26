@@ -21,7 +21,7 @@ const TimeTrackingDashboard = dynamic(
 );
 
 import Link from "next/link";
-import { Settings, Target, LayoutGrid, Bell } from "lucide-react";
+import { Settings, Target, LayoutGrid, Bell, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -148,6 +148,12 @@ export default function Home() {
               <Button variant="ghost" size="sm" className="gap-2">
                 <Bell className="h-4 w-4" />
                 <span className="hidden sm:inline">One Day Dashboard</span>
+              </Button>
+            </Link>
+            <Link href="/daily_insights">
+              <Button variant="ghost" size="sm" className="gap-2">
+                <BookOpen className="h-4 w-4" />
+                <span className="hidden sm:inline">Daily Insights</span>
               </Button>
             </Link>
           </nav>
