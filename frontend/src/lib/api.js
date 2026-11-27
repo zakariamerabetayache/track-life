@@ -84,7 +84,7 @@ export const api = {
     fetchAPI(`/categories/${id}`, { method: 'DELETE' }),
 
   // Day Goals
-  getTodayGoals: () => fetchAPI('/day-goals/today'),
+  getTodayGoals: (day) => fetchAPI(`/day-goals/today?day=${day || null}`),
   addDayGoal: (data) =>
     fetchAPI('/day-goals', { method: 'POST', body: JSON.stringify(data) }),
   removeDayGoal: (id) =>

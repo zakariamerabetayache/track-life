@@ -2,13 +2,14 @@
 
 import React, { useState, useMemo, useCallback } from "react";
 import Link from "next/link";
-import { Sun, Moon, Target, Plus, X, Check, AlertCircle, RefreshCw, Trash2, ArrowLeft, Pencil, BookOpen, Lightbulb, Zap, Eye, Smile, Briefcase } from "lucide-react";
+import { Sun, Moon, Target, Plus, X, Check, AlertCircle, RefreshCw, Trash2, Pencil, BookOpen, Lightbulb, Zap, Eye, Smile, Briefcase } from "lucide-react";
 import {
   useTodayGoals,
   useToggleCompletion,
   useAddGoal,
   useDeleteGoal,
 } from "@/features/weekDashBoard/hooks/use-today-goals";
+import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   useTodayInsight,
   useUpsertInsight,
@@ -419,6 +420,7 @@ function AddInput({ onCommit, onCancel, placeholder = "Goal title..." }) {
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function OneDayCard() {
+  const [day, setDay] = useState(null);
   const {
     prayerPeriods,
     habits,
@@ -429,7 +431,7 @@ export default function OneDayCard() {
     isLoading,
     error,
     refetch,
-  } = useTodayGoals();
+  } = useTodayGoals(day);
 
   // Daily insight hook for sleep anchor (upsert to daily_insights)
   const { sleep_data: insightSleep } = useTodayInsight();
@@ -440,6 +442,7 @@ export default function OneDayCard() {
   const deleteGoalMutation = useDeleteGoal();
   // Which section is showing the add input: "fajr"|"dhuhr"|...|"habits"|null
   const [addingTo, setAddingTo] = useState(null);
+
 
   const today = useMemo(
     () => new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }),
@@ -501,10 +504,41 @@ export default function OneDayCard() {
           </span>
         </div>
 
+
+        {/* Previous button */}
+        <button
+          disabled={day === 0}
+          type="button"
+          className="flex h-9 w-9 items-center justify-center rounded-lg
+    border border-gray-700 bg-gray-800 text-gray-400
+    shadow-sm transition-all duration-200
+    hover:border-gray-600 hover:bg-gray-700 hover:text-gray-100
+    active:scale-95"
+          onClick={() => setDay(dayOfWeek - 1)}
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </button>
+
+
+
         {/* Date — centred in remaining space */}
         <span className="text-xs sm:text-base font-medium text-center flex-1" style={{ color: "#cbd5e1" }}>
           {today}
         </span>
+
+        {/* Next button */}
+        <button
+          disabled={day === 6}
+          type="button"
+          className="flex h-9 w-9 items-center justify-center rounded-lg
+    border border-gray-700 bg-gray-800 text-gray-400
+    shadow-sm transition-all duration-200
+    hover:border-gray-600 hover:bg-gray-700 hover:text-gray-100
+    active:scale-95"
+          onClick={() => setDay(dayOfWeek + 1)}
+        >
+          <ChevronRight className="h-5 w-5" />
+        </button>
 
         {/* Progress ring */}
         <div className="relative shrink-0" style={{ width: 68, height: 68 }}>

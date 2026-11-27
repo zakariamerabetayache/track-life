@@ -444,7 +444,8 @@ function computeStreaks(doneDates) {
 const getToday = async (req, res, next) => {
   try {
     const today = new Date();
-    const todayDayOfWeek = today.getDay(); // 0 = Sunday … 6 = Saturday
+    const realTodayDayOfWeek = today.getDay(); // 0 = Sunday … 6 = Saturday
+    const todayDayOfWeek = req.query.day != undefined ? realTodayDayOfWeek + Number(req.query.day) : realTodayDayOfWeek
 
     // ── 1. Find or create current week ────────────────────────────────────────
     const { year, week: weekNumber } = getISOWeekInfo(today);
@@ -498,7 +499,7 @@ const getToday = async (req, res, next) => {
         goal_duration: formatHoursAndMins(hours),
       };
     } else {
-      const keywords = ['sleep', 'نوم', 'النوم'];
+      const keywords = ['Sleep', 'sleep', 'نوم', 'النوم'];
       let sleepGoalMatch = todayGoals.find((dg) =>
         keywords.some((kw) => {
           const title = (dg.goal?.title ?? '').toLowerCase();

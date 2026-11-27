@@ -74,10 +74,10 @@ function transformDayGoals(rawDayGoals = []) {
 
 
 // ── Main hook ─────────────────────────────────────────────────────────────────
-export function useTodayGoals() {
+export function useTodayGoals(day) {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: todayGoalsKey,
-    queryFn: () => api.getTodayGoals(),
+    queryFn: () => api.getTodayGoals(day),
     refetchInterval: 60_000,
     staleTime: 30_000,
   });
