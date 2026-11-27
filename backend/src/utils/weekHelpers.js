@@ -155,4 +155,22 @@ async function getOrCreateWeek(year, weekNumber) {
   });
 }
 
-module.exports = { getISOWeekInfo, getISOWeeksInYear, getSundayOfWeek, getOrCreateWeek };
+/** Resolves an optional ?day=0..6 query parameter, falling back to fallbackDay when omitted/null. Returns null if out of range or non-integer. */
+function resolveDayOfWeek(dayParam, fallbackDay) {
+  if (
+    dayParam === undefined ||
+    dayParam === null ||
+    dayParam === '' ||
+    dayParam === 'null' ||
+    dayParam === 'undefined'
+  ) {
+    return fallbackDay;
+  }
+  const parsed = Number(dayParam);
+  if (!Number.isInteger(parsed) || parsed < 0 || parsed > 6) {
+    return null;
+  }
+  return parsed;
+}
+
+module.exports = { getISOWeekInfo, getISOWeeksInYear, getSundayOfWeek, getOrCreateWeek, resolveDayOfWeek };

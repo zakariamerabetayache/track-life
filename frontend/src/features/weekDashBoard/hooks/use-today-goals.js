@@ -76,7 +76,7 @@ function transformDayGoals(rawDayGoals = []) {
 // ── Main hook ─────────────────────────────────────────────────────────────────
 export function useTodayGoals(day) {
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: todayGoalsKey,
+    queryKey: [...todayGoalsKey, day ?? "today"],
     queryFn: () => api.getTodayGoals(day),
     refetchInterval: 60_000,
     staleTime: 30_000,
@@ -84,7 +84,7 @@ export function useTodayGoals(day) {
 
   const rawDayGoals = data?.data?.day_goals ?? [];
   const weekId = data?.data?.week_id ?? null;
-  const dayOfWeek = data?.data?.day_of_week ?? new Date().getDay();
+  const dayOfWeek = day ?? data?.data?.day_of_week ?? new Date().getDay();
   const sleepData = data?.data?.sleep_data ?? null;
 
   const { prayerPeriods, habits, progress, sleepDayGoalId } = transformDayGoals(rawDayGoals);
@@ -117,9 +117,9 @@ export function useToggleCompletion() {
 
     onMutate: async ({ dayGoalId, occurrenceIndex, isCompleted }) => {
       await queryClient.cancelQueries({ queryKey: todayGoalsKey });
-      const previous = queryClient.getQueryData(todayGoalsKey);
+      const previous = queryClient.getQueriesData({ queryKey: todayGoalsKey });
 
-      queryClient.setQueryData(todayGoalsKey, (old) => {
+      queryClient.setQueriesData({ queryKey: todayGoalsKey }, (old) => {
         if (!old?.data?.day_goals) return old;
         return {
           ...old,
@@ -140,7 +140,7 @@ export function useToggleCompletion() {
     },
 
     onError: (_err, _vars, ctx) => {
-      if (ctx?.previous) queryClient.setQueryData(todayGoalsKey, ctx.previous);
+      ctx?.previous?.forEach(([key, val]) => queryClient.setQueryData(key, val));
     },
 
     onSettled: () => queryClient.invalidateQueries({ queryKey: todayGoalsKey }),
@@ -175,9 +175,9 @@ export function useDeleteGoal() {
 
     onMutate: async (dayGoalId) => {
       await queryClient.cancelQueries({ queryKey: todayGoalsKey });
-      const previous = queryClient.getQueryData(todayGoalsKey);
+      const previous = queryClient.getQueriesData({ queryKey: todayGoalsKey });
 
-      queryClient.setQueryData(todayGoalsKey, (old) => {
+      queryClient.setQueriesData({ queryKey: todayGoalsKey }, (old) => {
         if (!old?.data?.day_goals) return old;
         return {
           ...old,
@@ -192,7 +192,7 @@ export function useDeleteGoal() {
     },
 
     onError: (_err, _vars, ctx) => {
-      if (ctx?.previous) queryClient.setQueryData(todayGoalsKey, ctx.previous);
+      ctx?.previous?.forEach(([key, val]) => queryClient.setQueryData(key, val));
     },
 
     onSettled: () => queryClient.invalidateQueries({ queryKey: todayGoalsKey }),

@@ -1,7 +1,7 @@
 const prisma = require('../db/prisma');
 const asyncHandler = require('../utils/asyncHandler');
 const { NotFoundError } = require('../utils/errors');
-const { getISOWeekInfo, getOrCreateWeek } = require('../utils/weekHelpers');
+const { getISOWeekInfo, getOrCreateWeek, resolveDayOfWeek } = require('../utils/weekHelpers');
 
 // ── Time helpers (same logic as dayGoals.controller) ─────────────────────────
 function calcHoursBetween(from, to) {
@@ -64,7 +64,14 @@ const getToday = asyncHandler(async (req, res) => {
   const today       = new Date();
   const { year, week: weekNumber } = getISOWeekInfo(today);
   const currentWeek = await getOrCreateWeek(year, weekNumber);
-  const dayOfWeek   = today.getDay(); // 0 = Sunday
+  const dayOfWeek   = resolveDayOfWeek(req.query.day, today.getDay()); // 0 = Sunday
+
+  if (dayOfWeek === null) {
+    return res.status(400).json({
+      success: false,
+      message: 'Query parameter "day" must be an integer between 0 and 6.',
+    });
+  }
 
   const insight = await prisma.dailyInsight.findUnique({
     where: { week_id_day_of_week: { week_id: currentWeek.id, day_of_week: dayOfWeek } },

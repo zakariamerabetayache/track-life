@@ -312,8 +312,8 @@ function DailyCheckInForm({ insight, insightSleep, weekId, dayOfWeek, savedAt, o
   );
 }
 
-function DailyCheckIn({ weekId, dayOfWeek }) {
-  const { insight, sleep_data: insightSleep, isLoading } = useTodayInsight();
+function DailyCheckIn({ weekId, dayOfWeek, day }) {
+  const { insight, sleep_data: insightSleep, isLoading } = useTodayInsight(day);
   const [savedAt, setSavedAt] = useState(null);
 
   if (isLoading) {
@@ -324,7 +324,7 @@ function DailyCheckIn({ weekId, dayOfWeek }) {
 
   return (
     <DailyCheckInForm
-      key={insight?.id ?? "empty"}
+      key={`${dayOfWeek}-${insight?.id ?? "empty"}`}
       insight={insight}
       insightSleep={insightSleep}
       weekId={weekId}
@@ -434,7 +434,7 @@ export default function OneDayCard() {
   } = useTodayGoals(day);
 
   // Daily insight hook for sleep anchor (upsert to daily_insights)
-  const { sleep_data: insightSleep } = useTodayInsight();
+  const { sleep_data: insightSleep } = useTodayInsight(day);
   const upsertInsightMutation = useUpsertInsight();
 
   const toggleMutation = useToggleCompletion();
@@ -444,10 +444,11 @@ export default function OneDayCard() {
   const [addingTo, setAddingTo] = useState(null);
 
 
-  const today = useMemo(
-    () => new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }),
-    []
-  );
+  const displayDate = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + (dayOfWeek - d.getDay()));
+    return d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+  }, [dayOfWeek]);
 
   // Circular SVG ring
   const R = 42, C = 2 * Math.PI * R;
@@ -507,14 +508,14 @@ export default function OneDayCard() {
 
         {/* Previous button */}
         <button
-          disabled={day === 0}
+          disabled={isLoading || dayOfWeek <= 0}
           type="button"
           className="flex h-9 w-9 items-center justify-center rounded-lg
     border border-gray-700 bg-gray-800 text-gray-400
     shadow-sm transition-all duration-200
     hover:border-gray-600 hover:bg-gray-700 hover:text-gray-100
-    active:scale-95"
-          onClick={() => setDay(dayOfWeek - 1)}
+    active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
+          onClick={() => setDay(Math.max(0, dayOfWeek - 1))}
         >
           <ChevronLeft className="h-5 w-5" />
         </button>
@@ -523,19 +524,19 @@ export default function OneDayCard() {
 
         {/* Date — centred in remaining space */}
         <span className="text-xs sm:text-base font-medium text-center flex-1" style={{ color: "#cbd5e1" }}>
-          {today}
+          {displayDate}
         </span>
 
         {/* Next button */}
         <button
-          disabled={day === 6}
+          disabled={isLoading || dayOfWeek >= 6}
           type="button"
           className="flex h-9 w-9 items-center justify-center rounded-lg
     border border-gray-700 bg-gray-800 text-gray-400
     shadow-sm transition-all duration-200
     hover:border-gray-600 hover:bg-gray-700 hover:text-gray-100
-    active:scale-95"
-          onClick={() => setDay(dayOfWeek + 1)}
+    active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
+          onClick={() => setDay(Math.min(6, dayOfWeek + 1))}
         >
           <ChevronRight className="h-5 w-5" />
         </button>
@@ -808,7 +809,7 @@ export default function OneDayCard() {
 
       {/* ══ DAILY CHECK-IN ═══════════════════════════════════════════════════ */}
       <div className="shrink-0">
-        <DailyCheckIn weekId={weekId} dayOfWeek={dayOfWeek} />
+        <DailyCheckIn weekId={weekId} dayOfWeek={dayOfWeek} day={day} />
       </div>
 
     </div>

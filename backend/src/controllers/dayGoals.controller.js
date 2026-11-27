@@ -1,5 +1,5 @@
 const prisma = require('../db/prisma');
-const { getISOWeekInfo, getOrCreateWeek } = require('../utils/weekHelpers');
+const { getISOWeekInfo, getOrCreateWeek, resolveDayOfWeek } = require('../utils/weekHelpers');
 
 // ── 5 Fixed Prayers Configuration ─────────────────────────────────────────────
 const FIVE_PRAYERS = [
@@ -445,7 +445,14 @@ const getToday = async (req, res, next) => {
   try {
     const today = new Date();
     const realTodayDayOfWeek = today.getDay(); // 0 = Sunday … 6 = Saturday
-    const todayDayOfWeek = req.query.day != undefined ? realTodayDayOfWeek + Number(req.query.day) : realTodayDayOfWeek
+    const todayDayOfWeek = resolveDayOfWeek(req.query.day, realTodayDayOfWeek);
+
+    if (todayDayOfWeek === null) {
+      return res.status(400).json({
+        success: false,
+        message: 'Query parameter "day" must be an integer between 0 and 6.',
+      });
+    }
 
     // ── 1. Find or create current week ────────────────────────────────────────
     const { year, week: weekNumber } = getISOWeekInfo(today);

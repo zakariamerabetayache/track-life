@@ -8,16 +8,16 @@ export const todayInsightKey = ["today-insight"];
 export const dailyInsightsKey = ["daily-insights"];
 
 // ── Today's insight ───────────────────────────────────────────────────────────
-export function useTodayInsight() {
+export function useTodayInsight(day) {
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: todayInsightKey,
-    queryFn:  () => api.getTodayInsight(),
+    queryKey: [...todayInsightKey, day ?? "today"],
+    queryFn:  () => api.getTodayInsight(day),
     staleTime: 60_000,
   });
 
   return {
     weekId:      data?.data?.week_id      ?? null,
-    dayOfWeek:   data?.data?.day_of_week  ?? new Date().getDay(),
+    dayOfWeek:   day ?? data?.data?.day_of_week ?? new Date().getDay(),
     insight:     data?.data?.insight      ?? null,
     sleep_data:  data?.data?.sleep_data   ?? null,
     isLoading,
@@ -34,9 +34,15 @@ export function useUpsertInsight() {
     mutationFn: (payload) => api.upsertDailyInsight(payload),
 
     onSuccess: (response) => {
-      // Patch today cache directly so the UI reflects saved values immediately
-      queryClient.setQueryData(todayInsightKey, (old) => {
-        if (!old) return old;
+      // Patch matching day insight cache immediately
+      queryClient.setQueriesData({ queryKey: todayInsightKey }, (old) => {
+        if (!old?.data) return old;
+        if (
+          old.data.week_id !== response.data?.week_id ||
+          old.data.day_of_week !== response.data?.day_of_week
+        ) {
+          return old;
+        }
         return {
           ...old,
           data: {
@@ -46,6 +52,7 @@ export function useUpsertInsight() {
           },
         };
       });
+      queryClient.invalidateQueries({ queryKey: todayInsightKey });
       queryClient.invalidateQueries({ queryKey: dailyInsightsKey });
       queryClient.invalidateQueries({ queryKey: ["today-goals"] });
     },

@@ -84,7 +84,8 @@ export const api = {
     fetchAPI(`/categories/${id}`, { method: 'DELETE' }),
 
   // Day Goals
-  getTodayGoals: (day) => fetchAPI(`/day-goals/today?day=${day || null}`),
+  getTodayGoals: (day) =>
+    fetchAPI(day !== null && day !== undefined ? `/day-goals/today?day=${day}` : '/day-goals/today'),
   addDayGoal: (data) =>
     fetchAPI('/day-goals', { method: 'POST', body: JSON.stringify(data) }),
   removeDayGoal: (id) =>
@@ -97,7 +98,8 @@ export const api = {
     fetchAPI('/completions/toggle', { method: 'POST', body: JSON.stringify(data) }),
 
   // Daily Insights
-  getTodayInsight: () => fetchAPI('/daily-insights/today'),
+  getTodayInsight: (day) =>
+    fetchAPI(day !== null && day !== undefined ? `/daily-insights/today?day=${day}` : '/daily-insights/today'),
   upsertDailyInsight: (data) =>
     fetchAPI('/daily-insights', { method: 'PUT', body: JSON.stringify(data) }),
   getDailyInsights: (params = {}) => {
