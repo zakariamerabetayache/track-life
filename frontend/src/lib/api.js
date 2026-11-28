@@ -107,4 +107,9 @@ export const api = {
     return fetchAPI(`/daily-insights${query ? '?' + query : ''}`);
   },
   deleteDailyInsight: (id) => fetchAPI(`/daily-insights/${id}`, { method: 'DELETE' }),
+
+  // prayer times 
+
+  getCurrentDate: () => fetchAPI(`currentdate`),
+  getPrayertimes: () => fetchAPI(`https://api.aladhan.com/v1/timingsByCity/28-11-2026?city=Kerkera&country=Algeria&method=19`)
 };
